@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Writeyourownbooktest": {
+      "commandName": "Project",
+      "commandLineArgs": "\"talkfile\" \"US\" \"true\" \"ChatGPT\" \"true\" \"false\" \"true\""
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

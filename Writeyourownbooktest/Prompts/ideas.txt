@@ -1,0 +1,8 @@
+﻿- Create code to make a thriller
+- Publish output of a book to a website
+	> Create an email to yourself, but could also be a publisher.
+	> Create nice cover images for the book.
+- With "talkfile" create var vor "Harvard style" or other styles
+	> also for "With References" in the chosen style.
+	> In the future create a peer review page for others to do peer review
+	> Other quality check processes.

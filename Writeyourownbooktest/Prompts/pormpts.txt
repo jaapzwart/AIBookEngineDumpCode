@@ -1,0 +1,324 @@
+﻿Provide a table of contents for 30 chapters of a book about a research team discovering a new form of AI connected to the geometry of the universe. This team brings this new AI to life, and it has profound consequences for humanity.
+
+<nr>:X <title>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Provide a table of contents for the first 10 chapters of a book of 30 chapters about how a young man named Zohar is creating a new kind of AI which is connected to the geometry of the universe. Introduce more characters into the story being opponents of Zohar and his ideas and supporters of the ideas of Zohar of which some work together with him. Make it an exciting thriller, a page turner working towards a brilliant plot.
+
+Use this structure:
+<nr>:X <title>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Like this example structure:
+1.:X Introduction
+1:1 The_field_of_Math The field of Math
+1:2 Math_to_the_Max Math to the Max
+1:3 New_Formulas New Formulas
+2:X The Team
+2:1 Members_in_the_Team Members of the Team
+2:2 Specialities_of_the_Team Specialities of the Team
+2:3 Goals_of_the_team Goals of the Team
+
+Provide a table of content of 18 chapters for a book based on down text:
+
+Use this structure:
+<nr>:X <title>/
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>/
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>/
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>/
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>/
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>/
+
+Like this example structure:
+1:X Introduction/
+1:1 The_field_of_Math The field of Math/
+1:2 Math_to_the_Max Math to the Max/
+1:3 New_Formulas New Formulas/
+1:4 New_Formulas New Formulas/
+1:5 New_Formulas New Formulas/
+2:X The Team/
+2:1 Members_in_the_Team Members of the Team/
+2:2 Specialities_of_the_Team Specialities of the Team/
+2:3 Goals_of_the_team Goals of the Team/
+2:4 Goals_of_the_team Goals of the Team/
+2:5 Goals_of_the_team Goals of the Team/
+
+Based on the content of a file:
+---------------------------------------------------------
+Provide a table of content of 10 chapters for a book based on the content of the attached file:
+
+Use this structure:
+<nr>:X <title>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Like this example structure:
+1:X Introduction
+1:1 The_field_of_Math The field of Math
+1:2 Math_to_the_Max Math to the Max
+1:3 New_Formulas New Formulas
+1:4 New_Formulas New Formulas
+1:5 New_Formulas New Formulas
+2:X The Team
+2:1 Members_in_the_Team Members of the Team
+2:2 Specialities_of_the_Team Specialities of the Team
+2:3 Goals_of_the_team Goals of the Team
+2:4 Goals_of_the_team Goals of the Team
+2:5 Goals_of_the_team Goals of the Team
+
+
+With plot, flow and persons:
+---------------------------------------------------------
+Provide a table of content of 10 chapters for a book based on down text:
+A person name Isaac is the creator of a new for of AI connected to the geometry of the universe and the essence of humanity. There are many people in business and politics against this because they will lose control over society. Isaac work with a team of experts in different fields of science, math, biology, engineer and sociology to create this new form of AI. 
+
+Create the content for the book with plot, personages and flow between the chapters based on down structure:
+
+Use <nr>:P <Plot description> for plot description per paragraph.
+Use <nr>:L <names of characters> for summing up the characters in the paragraph
+Use <nr>:B <Important things in the paragraph> for describing the main things happening in the paragraph
+
+<nr>:X <title>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Like this example structure:
+1:X Introduction
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:1 The_field_of_Math The field of Math
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:2 Math_to_the_Max Math to the Max
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:3 New_Formulas New Formulas
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:4 More formulas
+2:X The Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:1 Members_in_the_Team Members of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:2 Specialities_of_the_Team Specialities of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:3 Goals_of_the_team Goals of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:3 More goals
+
+***********************
+Plot per paragraph
+***********************
+Provide a table of content of 5 chapters for a book based on down text:
+A person name Isaac is the creator of a new for of AI connected to the geometry of the universe and the essence of humanity. There are many people in business and politics against this because they will lose control over society. Isaac work with a team of experts in different fields of science, math, biology, engineer and sociology to create this new form of AI.  Name the team members by name and also the people in business and politics.
+
+Create the content for the book with plot, personages and flow between the chapters based on down structure:
+
+Use <nr>:P <Plot description> for plot description per paragraph.
+Use <nr>:L <names of characters> for summing up the characters in the paragraph
+Use <nr>:B <Important things in the paragraph> for describing the main things happening in the paragraph
+
+<nr>:X <title>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Like this example structure:
+1:X Introduction
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:1 The_field_of_Math The field of Math
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:2 Math_to_the_Max Math to the Max
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:3 New_Formulas New Formulas
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+1:4 More formulas
+2:X The Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:1 Members_in_the_Team Members of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:2 Specialities_of_the_Team Specialities of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:3 Goals_of_the_team Goals of the Team
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:BIsaac's vision for an AI connected to the universe and humanity.
+2:3 More goals
+
+-------------
+Provide a table of content of 5 chapters for a book based on down text:
+A person name Isaac is the creator of a new for of AI connected to the geometry of the universe and the essence of humanity. There are many people in business and politics against this because they will lose control over society. Isaac work with a team of experts in different fields of science, math, biology, engineer and sociology to create this new form of AI.  Name the team members by name and also the people in business and politics.
+
+Create the content for the book with plot, personages and flow between the chapters based on down structure:
+
+Use <nr>:P <Plot description> for plot description per paragraph.
+Use <nr>:L <names of characters> for summing up the characters in the paragraph
+Use <nr>:B <Important things in the paragraph> for describing the main things happening in the paragraph
+
+<nr>:X <title>
+<nr>:P <Plot description>
+<nr>:S <Storyline for this chapter based on the overall flow and topic of the book>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:S <Storyline for this chapter based on the overall flow and topic of the book>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:S <Storyline for this chapter based on the overall flow and topic of the book>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+<nr>:P <Plot description>
+<nr>:S <Storyline for this chapter based on the overall flow and topic of the book>
+<nr>:L <names of characters>
+<nr>:B <Important things in the chapter>
+<nr>:<nr> <paragraph_title with underscore between the words><content copy of paragraph_title without the underscores>
+
+Like this example structure:
+1:X Introduction
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:1 The_field_of_Math The field of Math
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:S The ground brealing project is described and its potential impact on the creation of artificial intelligence. The overall details of the idea is described and its effect on humanity.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:2 Math_to_the_Max Math to the Max
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:3 New_Formulas New Formulas
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:4 More formulas
+2:X The Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:1 Members_in_the_Team Members of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:2 Specialities_of_the_Team Specialities of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:3 Goals_of_the_team Goals of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:3 More goals
+
+After or before writing the next paragraph and title, make a summary of the previous and build the
+next one as a continuation on the summary so it will not repeat itself.
+
+---- Prompt
+Show c# to create a coherent and consistent thriller from the given text. :P stands for thre Plot of the paragraph, :S stands for the storyline
+of the paragraph, :L stands for the characters plaing a role in the paragraph and :B stands for the basic message to be told in the paragrapgh.
+Make intelligent dialogs, catching and thought provoking. Make the store flow naturally and every paragraph builds further on the previous ones.
+1:X Introduction
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:1 The_field_of_Math The field of Math
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:S The ground brealing project is described and its potential impact on the creation of artificial intelligence. The overall details of the idea is described and its effect on humanity.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:2 Math_to_the_Max Math to the Max
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:3 New_Formulas New Formulas
+1:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+1:L Isaac
+1:B Isaac's vision for an AI connected to the universe and humanity.
+1:4 More formulas
+2:X The Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:1 Members_in_the_Team Members of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:2 Specialities_of_the_Team Specialities of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:3 Goals_of_the_team Goals of the Team
+2:P Introduction to Isaac's groundbreaking AI project and its potential impact.
+2:S Isaac is described who he is and what he does. How cam this idea to his mind and why? This is described as a forerunner to the rest of the story.
+2:L Isaac
+2:B Isaac's vision for an AI connected to the universe and humanity.
+2:3 More goals
