@@ -11,6 +11,7 @@
 *.sln.docstates
 
 Secrets.cs
+WAVkey.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

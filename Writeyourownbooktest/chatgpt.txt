@@ -1,0 +1,62 @@
+Create 90 titles about the topic calculus in a logical order as a congruent story line about:
+
+Real line, decimals and significant figures
+The Theorem of Pythagoras and properties of the square root of 2
+Algebraic expressions, surds and approximations
+Equations and inequalities
+Sign diagrams, solution sets and intervals
+Coordinate systems
+Distance and absolute value
+Lines and circles in the plane
+Parabolas and quadratics
+The quadratic formula
+Functions as rules, with domain, range and graph
+Polynomial and power functions
+Composite functions
+Inverse functions
+The exponential function
+The logarithmic function
+Exponential growth and decay
+Sine, cosine and tangent
+The unit circle and trigonometry
+Inverse circular functions
+Slopes and average rates of change
+Displacement, velocity and acceleration
+Tangent lines and secants
+Different kinds of limits
+Limit laws
+Limits and continuity
+The derivative as a limit
+Finding derivatives from first principles
+Leibniz notation
+Differentials and applications
+Increasing and decreasing functions
+Sign diagrams
+Maxima and minima
+Concavity and inflections
+Curve sketching
+The Chain Rule
+Applications of the Chain Rule
+The Product Rule
+Applications of the Product Rule
+The Quotient Rule
+Application of the Quotient Rule
+Optimization 
+The Second Derivative Test
+Inferring displacement from velocity
+Areas bounded by curves
+Riemann sums and definite integrals
+The Fundamental Theorem of Calculus and indefinite integrals
+Connection between areas and derivatives
+Integration by substitution
+Odd and even functions
+The logistic function
+The escape velocity of a rocket
+
+and give the titles in this format:
+
+"talk" "Write a large mathematical essay on <title>." "US" "0.90" "3" 
+"talk" "Write a large mathematical essay on <title>." "US" "0.90" "3" 
+"talk" "Write a large mathematical essay on <title>." "US" "0.90" "3" 
+"talk" "Write a large mathematical essay on <title>." "US" "0.90" "3" 
+"talk" "Write a large mathematical essay on <title>." "US" "0.90" "3" 

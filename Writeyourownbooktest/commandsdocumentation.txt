@@ -1,0 +1,155 @@
+DOCUMENTATION ON COMMANDS
+-------------------------------------------------------------------------------------------------------------------
+"scrum" 1 5 1 false false true "Bible" "Psalms" 1 1 1 "" "Bible Psalms - " "2"
+"scrum" 1 5 1 false false true "Bible" "Psalms" 1 0 0 "" "Bible Psalms - " "2"
+"scrum" 1 5 1 false false true "Bible" "Psalms" 1 0 0 ""
+"scrum" 1 2 1 false false true "Bible" "Proverbs" 1 12 11 "" "Bible - " "2" "1"
+// This will get all from 1 John 1: with prefix Bible 1 which makes it correct again because otherwise the 1 before John would be missing because the api kills all leading numbers.
+"publish" 1 5 1 false "Your own title" "NL" "Publish" "Agile - " "3"
+"publish" 1 5 1 false "Basic Algebra for first class High School" "NL" "Publish" "dummy" "3" false (last is speech or not)
+// Bible - > aibookengine
+// Bible -- > aibookengine2
+// Binle --- > aibookengine3
+// First part does nothing, dummy.
+// 2 is amount of books.
+// 3 is amount of chapters
+// 4 is examples of same book
+// 5 Images
+// 6 AITopic of User (will AI overwrite subject title or not)
+// 7 Is the list coming from the Bible API (or other api)
+// 8 Holy book title
+// 9 Book from the Holy book
+// 10 Chapter in the book of the holy book
+// 11 End verse (0 for all)
+// 12 Start verse (0 for all)
+// 13 Extra string for the subject (e.d. "relate to the Kabbala" for example)
+// 14 The prefix for if we want to publish.
+//    > If empty, no publish
+//    > if filled, the books will be published
+// 15 Amount of Paragraphs (for now only for Bible books)
+// 16 Last Chapter (it will loop)
+--------------------------------------------------------------
+// "file" "<filename.txt>" "<prefix>" "folder" <targetfolder>"
+// "file" "<filename.txt>" "<prefix>" 
+*************************************************************
+// This will create a single file and publish.
+// The textfile must be a content file prefab.
+// Mainly done for if some files go wrong in a batch
+// Often you have the content text files that can be used.
+-------------------------------------------------------------
+// "book"
+*******************************************************************************************************************
+// Book.txt must be present in root (content of book to be 'rewritten')
+// chapter.txt will be written
+// "book" "Rephrase the sentence with added literary depth and finesse, ensuring it constantly tantalizes the reader's senses. Infuse it with an extra layer of intelligence that heightens the suspense, and if it has a dialog, make the dialog more exciting and thought provoking and return dialogs between quotation marks"
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+// MATH MATH MATH MATH
+//&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+// "book" "Repeat the same text and if the content is about math, add mathematical examples and explanations to the text in html tables and lists to oranize it." "Practical Algebra- An Easy-to-Follow Guide for Beginning College Students" "MATH ALG US - " "math" "NLL"
+// "book" "Repeat the same text and if the content is about math, add mathematical examples and explanations to the text in html tables and lists to oranize it." "Practical Algebra- An Easy-to-Follow Guide for Beginning College Students" "MATH ALG NL - " "math"
+// Remark CREATING THE FILE MATH WITH FUNCTIONS: First make the file through "batch" and publish to Web. Then Copy the text from the page to Book.txt. Then run "book" whith all the parameters.
+//"book" "Repeat the same text and if the content is about math, add mathematical examples and explanations to the text in html tables and lists to oranize it." "a practical guide to college level mathematics for beginners" "MATH ALGEBRA US FUNCS - " "math"
+// "book" "Analyze the text and if the content is about math, add mathematical examples and explanations to the text in html tables <table></table> and lists <ul></ul> to organize it and Create borders around tables and their cells but do not use pictures or diagrams:" "a practical guide to college level mathematics for beginners" "MATH ALGEBRA US FUNCS - " "math" "NL"
+// "book" "Repeat the same text and if the content containt math OR chemistry OR science, add mathematical, chemistry or scientific formulas detailed explanations to the text in SIMPLE one dimensional html tables and lists to organize it with ending HTML tags for all tables, html code and lists. Double check formulas on there correctness. Make sure to finish all tables and lists with ending html tags. Create borders around tables and their cells. Create light grey background colors in tables for more clarity. Do not use pictures, images or diagrams." "A Basic Guide to High School Algebra- Unlocking the Secrets of Math for Beginners" "MATH ALGEBRA US FUNCS - " "math"
+// &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+// "book" "If the text contains Agile, Scrum or SaFe information, add detailed explanations to the text in SIMPLE one dimensional html tables <table></table> and lists <ul></ul> to organize it with ending HTML tags for all tables and lists. Do not use pictures, images or diagrams." "Mastering Portfolio Management in a SaFe Framework" "AGILE SAFE NL FUNC vvv " "math" "NL"
+// "book" "If the text contains Agile, Scrum or SaFe information, add in depth extensive detailed explanations to the text in SIMPLE one dimensional html tables <table></table> and lists <ul></ul> to organize it with ending HTML tags for all tables and lists. Use colored tables for clarity. Give the tables and cells borders. Do not use pictures, images or diagrams." "The Agile Coach within a Complex Environment" "AGILE COACH NL FUNC w " "math" "NL"
+
+-------------------------------------------------------------------------------------------------------------------
+// "voicebook"
+*******************************************************************************************************************
+// Reading a book and speak the content out loud.
+// Bookvoice.txt must be in the program folder with the text of the book.
+-------------------------------------------------------------------------------------------------------------------
+// "batch"
+// "batchvar" for more books on the subject
+*******************************************************************************************************************
+// Subject WILL be overwritten.
+// It will read a text file called FileBatch.txt line by line.
+// "Agile_Coach" 1 2 1 false (line format in the file)
+// param 1 = subject (unerscores needed)
+// 2 amount of book, always put on 1
+// 3 Amount of chapters, can be whatever you want, do under 23
+// 4 amount of same books on the topic (content will be different)
+// 5 images
+// EXTRA ATTRIBUTES IN FILE:
+// "The Role of the US Agile Coach in Complex Organizations" "1" "6" "1" "false" "US" "Publish" "US Agile - " " Extra information " " Extra summary " " Extra titles "
+-------------------------------------------------------------
+// "The Role of the US Agile Coach in Complex Organizations" "1" "6" "1" "false" "NL" "Publish" "Agile NL - " "" "" "" "no"
+
+// "The Role of the US Agile Coach in Complex Organizations" "1" "6" "1" "false" "NL" "Publish" "Agile NL - " "" "" "" "yes" "5" (the forelast variable is an indication of being a thriller or not, the last is the amount of paragraphs to be made)
+-------------------------------------------------------------
+// This will publish the file to blob and website.
+// "Publish" does what it says. The parameter after that is the prefix of the filename in blob and website
+// "Extra information (for example telling to use characters and dialogs)" can be used to enrich the content of the book. You need to replace it with your own information.
+// "Extra for summary (For example to save the used characters in previous text)"
+// "Extra for integrating into the titles of paragraphs and chapters (For example to ask to name characters in the titles)"
+"Perry Thodan and The Metatron Cube Ship" "1" "6" "1" "false" "US" "Publish" "Z Thriller Text - " "Use characters throughout the book with thought provoking dialogs. Main Characters are Perry Rhodan, Arlando, Shufo and Makita" "Save the characters in previous tetx and build futher with them the story line." "Name characters in the chapter and paragraph titles that play a role in that part."
+-------------------------------------------------------------------------------------------------------------------
+// "talk" "subject" "US" 0.85 3 (USS, NLL, DEE UKK makes also a file)
+// "talkfile" "NL" (reads the file Filetalk.txt) and saves output to a file.
+// "talkfile" "US" "false" "Google" "true" "true" "true"
+// false is quite false is talk, true is quite
+// "Google" is Google API will be used, else ChatGPT
+// "talkfile" "US" "true" "ChatGPT" "true" "true" "true"
+// _language = args[1];
+// _talkfile_Quite = args[2];
+// _prompt_provider = args[3];
+// _Images = args[4];
+// _elaborate = args[5];
+// _Replace_InConclusion = args[6];
+*******************************************************************************************************************
+// "discuss" "US" "false" "Google"
+// Takes the file FileDiscuss and creates a dialog between ChatGPT and Google.
+// false is quite false is talk, true is quite
+// "Google" is Google API will be used, else ChatGPT
+*******************************************************************************************************************
+// "startrek" opens up the Enterprise computer for conversation.
+// Conversation will be saved to a file.
+-------------------------------------------------------------------------------------------------------------------
+// "Scrum" 2 3 1 false
+// Creates 2 books about scrum (variation on subject), 3 chapters, one example of one title and no images.
+*******************************************************************************************************************
+// param 1: the title of the book(s)
+// param 2: the amount (variations on the title)
+// param 3: amount of chapters
+// param 4: examples of same book (content differs)
+// param 5: images
+-------------------------------------------------------------------------------------------------------------------
+// Lets talk!
+// "speak"
+// Example "Make three books about math, three chapters, no images"
+// Will be translated to "math" 1 3 1 false
+// Down commands neglect the given subject in voice command.
+// Example "Make three books about math, three chapters, no images" math will be overwritten with own title.
+*******************************************************************************************************************
+// Possible command 1.1: "speak" 3 "Your own title"
+// Possible command 1.2: "speak" 3 "Your own title" "NL"
+// Possible command 1.3: "speak" 3 "Your own title" "NL" 0.9
+// Possible command 1.4: "speak" 3 "Your own title" "NL" "Publish" "Agile - "
+// Possible command 2: "speak" 3
+// param 1: you want to speak
+// param 2: AI level of lecture
+// param 3: Yiour own title that will overrule what you tell the computer
+// param 4: Language (for now default US, NL, BG and DE)
+// param 5: Speed of talk. If you want to have the lecture slow.
+-------------------------------------------------------------------------------------------------------------------
+// "thriller" "Perry Rhodan and the Red Moon" 2 3 1 false
+*******************************************************************************************************************
+// Creates a thriller on the subject
+
+*************************************************************
+FILES MAKING A DIFFERENCE IN THE PROGRAM
+*************************************************************
+sAmbiance.txt
+-------------------------------------------------------------
+This file gives the user the possibility to influence the way AI will write.
+*************************************************************
+sTwoLinesChapterTitles
+-------------------------------------------------------------
+This file gives the use influence on the creation of the names of the titles for chapters and paragraphs.
+*************************************************************
+sTwoLinesChapterTitlesThriller
+-------------------------------------------------------------
+Extra parameters when doing a thriller
+

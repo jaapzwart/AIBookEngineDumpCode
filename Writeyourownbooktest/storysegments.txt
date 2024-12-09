@@ -1,0 +1,112 @@
+1:X Introduction/ 
+1:C Perry Rhodan (Male)|Protagonist, highly skilled in combat and determined to save the world from the darkness. 
+1:P Perry Rhodan is introduced and the main line of the story is set 
+1:S Perry sets off to take on the evil of lies 
+1:1 Preparing_for_the_Journey Preparing for the Journey/
+1:2 Rallying_the_Allies Rallying the Allies/
+1:3 Taking_on_the_Quest Taking on the Quest/
+2:X Building the Team/
+2:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+2:P Perry begins to find allies who will join him in his battle against the darkness 
+2:S Perry and his team join forces and determine their primary goal
+2:1 Meeting_Team_Members Meeting Team Members/
+2:2 Assessing_Team_Skills Assessing Team Skills/
+2:3 Assigning_Roles Assigning Roles/  
+3:X The Battle Begins/
+3:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness.
+3:P Perry Rhodan's team starts to take the fight to the enemies of light
+3:S Perry Rhodan faces battles of life and death 
+3:1 Taking_the_Battle_to_the_Enemy Taking the Battle to the Enemy/
+3:2 Battle_Strategies Battle Strategies/
+3:3 Harrowing_Fights Harrowing Fights/ 
+4:X The Victories/
+4:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+4:P The team uses their wits and skills to gain some of the essential victories of the war
+4:S As the light advances, some of the battles become more challenging
+4:1 Agains_the_Dark_Foes Against the Dark Foes/
+4:2 Gains_in_the_Lands Gains in the Lands/
+4:3 Into_the_Depths Into the Depths/
+5:X The Uprising/
+5:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+5:P Perry's team manages to rally the people of the world together in a united effort to end the evil 
+5:S The battle reaches new heights and the stakes become higher 
+5:1 The_Rally The Rally/
+5:2 Advancing_Light Advancing Light/
+5:3 Finest_Hour Finest Hour/
+6:X Hope and Despair/
+6:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+6:P As the team battles on to restore light, they come to terms with the highs and lows of war 
+6:S The team must find their courage and strength despite all odds 
+6:1 From_Moment_to_Moment From Moment to Moment/
+6:2 The_Tides_of_Time The Tides of Time/
+6:3 The_Light_of_Hope The Light of Hope/
+7:X The Unthinkable/
+7:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+7:P Perry and his team will face the unthinkable as they fight to end the darkness 
+7:S Perry and the team must make difficult decisions in order to win the war 
+7:1 Dangerous_Crossroads Dangerous Crossroads/
+7:2 Unexpected_Enemies Unexpected Enemies/
+7:3 Against_All_Odds Against All Odds/
+8:X The Final Fight/
+8:C Rozalia Surlsa (Female)|The cunning queen of lies and the powerful force behind the rising darkness. 
+Alexander Owens (Male)|Former thief and conman turned Perry Rhodan's ally; Skilled in tracking and finding secrets. 
+Kathleen Appel (Female)|Highly intelligent investigator and scientist; devoted to helping Perry Rhodan uncover the truth. 
+Santhi Hallium (Male)|Brave warrior who joins Perry Rhodan's cause; skilled with sword and battle tactics. 
+Theresa Farrar (Female)|Adventurous but naive teenage girl brought to the fight by circumstances; capable of summoning powerful magic. 
+Fabian Brost (Male)|Religious leader with an unshakeable faith; 71-year-old veteran of many battles and wise teacher of moral lessons. 
+Isabella Rowe (Female)|Severe and disciplined leader of the resistance forces; passionate about aiding Perry Rhodan in his cause. 
+Josua Pearson (Male)|Young soldier with an iron determination to protect the innocent and restore the balance. 
+Haruka Mathis (Female)|Mysterious and wise old woman who aids Perry Rhodan on his journey; a powerful ally in the fight against the darkness. 
+8:P The team gears up for one final, decisive battle 
+8:S The battleground is set for a fight with the enemy of light 
+8:1 Assembling_the_Army Assembling the Army/
+8:2 Entering_the_Battleground Entering the Battleground/
+8:3 Dawn_of_Victory Dawn of Victory/

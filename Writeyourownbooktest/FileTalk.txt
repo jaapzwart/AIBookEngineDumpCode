@@ -1,0 +1,2 @@
+"Talk" "Write a large essay on the topic Financial Accounting." "US" "0.90" "3"
+"Talk" "Write a large essay on the topic Managerial Accounting." "US" "0.90" "3"
