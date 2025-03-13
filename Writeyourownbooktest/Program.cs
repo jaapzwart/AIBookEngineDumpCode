@@ -407,6 +407,15 @@ class Program
 
     public static string _first_letter { get; set; } = "Z";
 
+    // Bookvars
+    //-----------------------------------
+    public static int liness = 0;
+    public static string getResponse = "";
+    public static string sFore = "";
+    public static string bigStory = "";
+    public static string sSteeringFirstChapter = "";
+    //--------------------------------------
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// <summary>   Main entry-point for this application. </summary>
     ///
@@ -422,8 +431,9 @@ class Program
         List<string> GetSequenceFiles = new List<string>();
         System.Speech.Synthesis.SpeechSynthesizer speechSynthesizer = new System.Speech.Synthesis.SpeechSynthesizer();
 
+
         // First, the choices. Ask for speak or the command prompt.
-        
+
         // Args 0, you will get help
         if (args.Length == 0) // If no commands, show how it should be used.
         {
@@ -1412,6 +1422,155 @@ class Program
             }
             Console.WriteLine("File done, lines:" + lines.Count.ToString());
         }
+        else if (args[0] != null && args[0].Contains("talkBookComplete"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string filePath = "FileTalkBook.txt"; // Replace with your file path
+            string filePlot = "FileBookStart.txt"; // Replace with your file path
+
+            // Create the Word document
+            string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            string chapterTitlesPath = "talkfilebook_" + filename + ".docx";
+            //string chapterTitlesPath = "talkfile_conversation20250302001811548.docx";
+            string outputFilePath = appPath + chapterTitlesPath;
+            string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
+
+            List<string> lines = new List<string>();
+
+            string allBookTitles = "";
+            try
+            {
+                string bookPlot = "";
+                using (StreamReader readerPlot = new StreamReader(filePlot))
+                {
+                    string line;
+                    while ((line = readerPlot.ReadLine()) != null)
+                    {
+                        // Add each line to the list
+                        bookPlot += line + '\n';
+                    }
+                }
+                string bookTitles = "";
+                using (StreamReader readerTitles = new StreamReader(filePath))
+                {
+                    string line;
+                    while ((line = readerTitles.ReadLine()) != null)
+                    {
+                        // Add each line to the list
+                        bookTitles += line + '\n';
+                    }
+                }
+                // Read all lines from the file
+                using (StreamReader reader = new StreamReader(filePath))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        // Add each line to the list
+                        lines.Add(line);
+                        allBookTitles += line + '\n';
+                    }
+                }
+                int liness = 0;
+                string getResponse = "";
+                string getSummary = "";
+                string sFore = "";
+                string bigStory = "";
+                //using (StreamWriter writer = new StreamWriter(outputFilePath, false)) // Overwrite file
+                //{
+                foreach (string line in lines)
+                {
+                    sFore = line;
+
+                    // Prep quote
+                    // 
+                    string iimage = GlobalMethods.GetSubStringForImages(line,
+                        "Write in the style of Stephen King. Write an extensive large book chapter with rich intelligent dialogs and characters on the title - ");
+                    string sClean =
+                            iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
+                            .Replace("\"", "").Replace(";", "");
+                    string getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                    string sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                    string imagePath = "";
+
+                    // Do image
+                    //
+                    string makingImage = "Create a dark horror oriented image WTHOUT TEXT in the image based on "; ;
+                    string Simage = await GetDalleGood(makingImage
+                               + sQuote);
+                    if (Simage.Contains("Bad Request")) // Probably from words and length
+                    {
+                        Simage = await GetDalleGood(makingImage
+                        + sQuote);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+                    bool success = false;
+                    while (!success) // Sometimes this went wrong (time issue), so, while wrong repeat and it worked.
+                    {
+                        try
+                        {
+                            await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                            success = true; // If the method completes successfully, set success to true to exit the loop
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                            // Optionally, you can add a delay here before retrying
+                            // await Task.Delay(1000); // Delay for 1 second
+                        }
+                    }
+                    // Write title of chapter
+                    // 
+                    GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(outputFilePath, iimage, "Heading 1", "Times New Roman");
+
+                    // Write image and quote
+                    // 
+                    imagePath = appPath + sClean + ".jpg";
+                    GlobalMethods.AddImageToWordDocument(outputFilePath, imagePath);
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                    GlobalMethods.InsertQuotedText(outputFilePath, sQuote, true, false, "White", false, "Black"); // Quote with Page Break
+
+                   
+                    // Line specifics
+                    // 
+                    if (liness >= 1)
+                    {
+                        sFore += " and Continue the story based on the previous chapter " +
+                        getResponse +
+                        " and make it a natural continuation.";
+                    }
+                    else
+                    {
+                        sFore += " and base this first chapter around the plot when Rachel returns - "
+                            + bookPlot
+                            ;
+                    }
+
+                    // Do the response logic
+                    // 
+                    getResponse = await LargeGPT.CallLargeChatGPT(sFore, "o1") + "\n\n";
+                    //getSummary = await LargeGPT.CallLargeChatGPT("Write a large summary " +
+                    //    "that holds all main important ingredients of this chapter - " + getResponse, "o3-mini") + "\n\n";
+                    getResponse.Replace(line, "");
+
+                    // Writing text and quote
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                    GlobalMethods.InsertQuotedText(outputFilePath, sQuote, false, false, "White", false, "Black", "Garamond", 14); // Quote without Page Break
+                    GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(outputFilePath, getResponse, "Times New Roman", 12);
+                    //await writer.WriteLineAsync(getResponse);
+                    liness += 1;
+                }
+                //}
+               
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Error:" + ex.Message);
+            }
+        }
         // "talk" "subject" "US" 0.85 3
         // "talkfile" (reads the file Filetalk.txt) and saves output to a file.
         else if (args[0] != null && args[0].Contains("talk"))
@@ -1431,6 +1590,14 @@ class Program
             }
             else if (args[0].Equals("talkfile")) // Speaks out the subject from a file and save  answers to a file.
             {
+                // Bookvars
+                //-----------------------------------
+                liness = 0;
+                getResponse = "";
+                sFore = "";
+                bigStory = "";
+                //--------------------------------------
+                
                 string appPath = AppDomain.CurrentDomain.BaseDirectory;
                 string filePath = "FileTalk.txt"; // Replace with your file path
                 List<string> lines = new List<string>();
@@ -1443,7 +1610,7 @@ class Program
 
                 string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
                 string chapterTitlesPath = "talkfile_conversation" + filename + ".docx";
-                //string chapterTitlesPath = "talkfile_conversation20240913102614856.docx";
+                //string chapterTitlesPath = "talkfile_conversation20250302001811548.docx";
                 _talkfile = appPath + chapterTitlesPath;
                 string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
 
@@ -1476,6 +1643,7 @@ class Program
                     string foreWordFromFile = "";
                     string introductionFromFile = "";
                     string afterWordFromFile = "";
+                    
                     if (File.Exists(_talkfilePrefix))
                     {
                         // Open the file and read the first line
@@ -1497,6 +1665,8 @@ class Program
                             Console.WriteLine("Seventh line: " + introductionFromFile);
                             afterWordFromFile = sr.ReadLine();
                             Console.WriteLine("Eight line: " + afterWordFromFile);
+                            sSteeringFirstChapter = sr.ReadLine();
+                            Console.WriteLine("Nine line: " + sSteeringFirstChapter);
                         }
                     }
                     else
@@ -1510,6 +1680,7 @@ class Program
                         Console.WriteLine("Creating Foreword...");
                         GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, "ForeWord", "Heading 1", "Time New Roman");
                         string foreword = await GetChatGPTExtraSmallToken(foreWordFromFile);
+
                         GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(_talkfile, foreword, "Times New Roman", 12);
                         Console.WriteLine("Created Foreword...");
                         Console.WriteLine(repeatedString + '\n');
@@ -1526,6 +1697,7 @@ class Program
                     }
 
                     // Optional: Print lines to console for verification
+
                     foreach (string l in lines)
                     {
                         // Splitting the line into parts
@@ -1542,7 +1714,7 @@ class Program
                         Console.WriteLine($"Question: {question.Replace("_", " ")}, Speed: {_speed}, Language: {_language}, AILevel: {_AILevel}");
 
 
-                       
+
                         Console.WriteLine(repeatedString + '\n');
                         string shortQ = question.Replace("_", " ").Replace(questionFront, "");
                         GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, shortQ, "Heading 1", "Times New Roman");
@@ -1629,11 +1801,12 @@ class Program
                                     "Not implemented level 2 AI",
                                     secondQuestion.Replace("_", " "));
                                 //_code_blocks = "false";
-                                
+
                                 do200 = false;
                             }
                         }
                     }
+
                     if (_elaborate.Contains("true"))
                     {
                         // Afterword
@@ -1644,6 +1817,7 @@ class Program
                         GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(_talkfile, afterword, "Times New Roman", 12);
                         Console.WriteLine("Created Afterword...");
                     }
+
                 }
                 catch (IOException e)
                 {
@@ -1654,7 +1828,7 @@ class Program
             }
             else if (args[0].Equals("talkold")) // Speaks out the subject from a file and save  answers to a file.
             {
-                
+
                 string appPath = AppDomain.CurrentDomain.BaseDirectory;
                 string filePath = "FileTalk.txt"; // Replace with your file path
                 List<string> lines = new List<string>();
@@ -1737,7 +1911,7 @@ class Program
                 Console.WriteLine(repeatedString + '\n');
                 Console.WriteLine(repeatedString + '\n');
 
-                
+
                 try
                 {
                     // Read all lines from the file
@@ -1750,7 +1924,7 @@ class Program
                             lines.Add(line);
                         }
                     }
-                   
+
                     // Optional: Print lines to console for verification
                     foreach (string l in lines)
                     {
@@ -1780,21 +1954,21 @@ class Program
                                 .Replace("\"", "").Replace(";", "").Replace("-", ""); // This we do to create clean image strings.
 
                         Console.WriteLine(repeatedString + '\n');
-                        GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, 
+                        GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile,
                             sClean, "Heading 1");
                         Console.WriteLine(question.Replace("_", " ") + '\n');
                         Console.WriteLine(repeatedString + '\n');
 
                         string imagePath = "";
-                        
+
                         string sSummary = "Write a short summary of 4 short lines and not more than 320 characters of the essence of this Bible ";
-                        
+
 
                         string qq = "Give a thought provoking " +
                                         "quote without source for " + sClean;
 
                         string getQuote = await GetChatGPTSmallToken(qq);
-                       
+
                         string sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         sQuote = GlobalMethods.CleanStringAfterLastQuote(getQuote);
 
@@ -1847,7 +2021,7 @@ class Program
 
                         Console.WriteLine($"Image Quote image created at: {outputPath}");
                         GlobalMethods.AddImageToWordDocumentOriginal(_talkfile, perkamentOutFinal, sQuote);
-                        
+
                         using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(_talkfile, true))
                         {
                             GlobalMethods.InsertPageBreak(wordDoc);
@@ -1858,11 +2032,11 @@ class Program
                         string subHeader = "Analysis of the Title";
                         GlobalMethods.AppendBoldTextToWord(_talkfile, subHeader, false, "Old English Text MT", 20);
 
-                        
+
                         getQuote = await GetChatGPTSmallToken(qq);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         sQuote = GlobalMethods.CleanStringAfterLastQuote(getQuote);
-                      
+
                         // Quote
                         GlobalMethods.CreateQuoteBoxWithBackground(imagePathQuote, outputPath, sQuote.Replace("\n\n", "")
                             .Replace("\n", ""), fontSize);
@@ -1875,12 +2049,12 @@ class Program
 
 
                         CompletionRequest completion = new CompletionRequest();
-                       
+
                         question = sStyle + questionFront + sClean;
                         //GlobalMethods.InsertQuotedText(_talkfile, sQuote, false, true, "Black", false, "Black"); // Quote without Page Break
 
                         //string firstLetter = "Do NOT start your answer with" + _first_letter;
-                        
+
                         _with_bible_letter = "true";
                         CheckLevelOfAIAnswer(speechSynthesizer,
                             "Not implemented level 1 AI",
@@ -1891,12 +2065,12 @@ class Program
                         if (_elaborate.Contains("true"))
                         {
                             bool do200 = true;
-                            if(_loop_discussion.Equals(100))
+                            if (_loop_discussion.Equals(100))
                             {
                                 subHeader = "Influence on the Development of Thought";
                                 GlobalMethods.AppendBoldTextToWord(_talkfile, subHeader, true, "Old English Text MT", 20);
 
-                                
+
                                 getQuote = await GetChatGPTSmallToken(qq);
                                 sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                                 sQuote = GlobalMethods.CleanStringAfterLastQuote(getQuote);
@@ -1909,7 +2083,7 @@ class Program
                                 Console.WriteLine($"Image Quote image created at: {outputPath}");
                                 GlobalMethods.AddImageToWordDocumentOriginal(_talkfile, perkamentOutFinal, sQuote);
                                 GlobalMethods.AddEmptyLineToWordDocument(_talkfile);
-                               
+
                                 string secondQuestion =
                                         @"Give a a medium size essay about the development of the Western Philosophy resulting from  " + sClean +
                                         " and how it was applied by other philosophers with some examples.";
@@ -1960,7 +2134,7 @@ class Program
                                 _loop_discussion = 100;
                             }
                         }
-                        
+
                     }
                     // Afterword
                     Console.WriteLine(repeatedString + '\n');
@@ -1968,7 +2142,7 @@ class Program
                     GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, "Afterword", "Heading 1");
                     string afterword = await GetChatGPTExtraSmallToken(
                         sStyle + "Create a very large essay as afterthought on the subject of the influence of the Philosophy of Plato on the Philosophy of the world development after his time.");
-                    
+
                     firstChar = GlobalMethods.GetFirstCharacter(afterword);
                     GlobalMethods.ExtractFirstCharacter(afterword, out firstChar, out remainingString);
 
@@ -1995,7 +2169,7 @@ class Program
                     Console.WriteLine(e.Message);
                 }
 
-                
+
             }
             else if (args[0].Equals("talkbible")) // Speaks out the subject from a file and save  answers to a file.
             {
@@ -2011,10 +2185,10 @@ class Program
                 _Replace_InConclusion = args[6];
 
                 string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
-                string chapterTitlesPath = "talkfile_conversation" + filename + ".docx";
-                //string chapterTitlesPath = "talkfile_conversation20240720215142404.docx";
+                //string chapterTitlesPath = "talkfile_conversation" + filename + ".docx";
+                string chapterTitlesPath = "talkfile_conversation20250111180318669.docx";
                 _talkfile = appPath + chapterTitlesPath;
-                string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
+                //string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
 
                 // Load the alphabet images
                 _images = GlobalMethods.LoadAlphabetImages(appPath);
@@ -2058,12 +2232,13 @@ class Program
                 System.Drawing.Image image;
 
                 // Introduction
+
                 Console.WriteLine(repeatedString + '\n');
                 Console.WriteLine("Creating Introduction...");
                 GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, "Introduction", "Heading 1");
 
                 string introduction = await GetChatGPTSmallToken(
-                     sStyle + "Create a large essay as introduction for the title: The Zohar Behind the Proverbs Chapters 3 and 4.");
+                     sStyle + "Create a large essay as introduction for the title: The Zohar Behind the Proverbs Chapters 5 and 6.");
 
                 firstChar = GlobalMethods.GetFirstCharacter(introduction);
                 GlobalMethods.ExtractFirstCharacter(introduction, out firstChar, out remainingString);
@@ -2088,6 +2263,7 @@ class Program
 
                 try
                 {
+                    /*
                     // Read all lines from the file
                     using (StreamReader reader = new StreamReader(filePath))
                     {
@@ -2346,12 +2522,14 @@ class Program
                         }
 
                     }
+                    */
+
                     // Afterword
                     Console.WriteLine(repeatedString + '\n');
                     Console.WriteLine("Creating Afterword...");
                     GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(_talkfile, "Afterword", "Heading 1");
                     string afterword = await GetChatGPTExtraSmallToken(
-                        sStyle + "Create a large essay as after thoughts for the title: The Zohar Behind the Proverbs Chapters 3 and 4.");
+                        sStyle + "Create a large essay as after thoughts for the title: The Zohar Behind the Proverbs Chapters 5 and 6.");
 
                     firstChar = GlobalMethods.GetFirstCharacter(afterword);
                     GlobalMethods.ExtractFirstCharacter(afterword, out firstChar, out remainingString);
@@ -2398,7 +2576,7 @@ class Program
                 _talkfile = appPath + chapterTitlesPath;
                 string cc = GlobalMethods.CreateWordDocument(_talkfile);
 
-                
+
                 try
                 {
                     // Read all lines from the file
@@ -2452,7 +2630,7 @@ class Program
                         string Simage = await GetDalleGood("Create a a mathematical mystical image without text from: " + iimage);
                         await GlobalMethods.GetImageFromURL(Simage, _talkfile, iimage);
 
-                       
+
                         CheckLevelOfAIAnswer(speechSynthesizer,
                             "Not implemented level 1 AI",
                             "Not implemented level 2 AI",
@@ -2547,7 +2725,7 @@ class Program
                 _talkfile = appPath + chapterTitlesPath;
                 string cc = GlobalMethods.CreateWordDocument(_talkfile);
 
-                
+
                 try
                 {
                     // Read all lines from the file
@@ -2706,7 +2884,7 @@ class Program
                                 //string sd = await WriteFileToBlobF(_discuss_answer, "aidiscussion.txt", "kentekenccontrole");
                                 await UploadTextToBlobAsync(blobContainer, "aidiscussion.txt", _discuss_answer);
                             }
-                            
+
                             if (_prompt_provider.Contains("Google"))
                                 _prompt_provider = "ChatGPT";
                             else
@@ -3052,6 +3230,30 @@ class Program
                 Console.WriteLine("Ready writing books");
             }
         }
+    }
+
+    private static void MakeAnImageOfTheFirstLetterInAString(string foreword)
+    {
+        string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string inputText = foreword;
+        char firstLetter = '\0';
+        foreach (char c in inputText)
+        {
+            if (char.IsLetter(c))
+            {
+                firstLetter = c;
+                break;
+            }
+        }
+        string firstLetterImagePath = Path.Combine(appDirectory, $"{char.ToUpper(firstLetter)}.jpg");
+
+        // Check if the image exists
+        if (!File.Exists(firstLetterImagePath))
+        {
+            Console.WriteLine($"Image for the letter '{firstLetter}' not found.");
+
+        }
+        GlobalMethods.AddImageToWordDocument(_talkfile, firstLetterImagePath);
     }
 
     private static async Task<List<string>> CreateQuote(string qq, string getQuote, string sQuote)
@@ -5671,6 +5873,23 @@ Exactly Like this example structure:
 
                 if (_loop_discussion.Equals(100)) // For the non Blob calls
                 {
+                    if (_prompt_provider.Contains("Chato1"))
+                    {
+                        sFore = answer3;
+                        if (liness >= 1)
+                        {
+                            bigStory += languagestring;
+                            sFore += " and Continue the story based on and as a continuation of the previous chapters " +
+                            bigStory +
+                            " and make it a natural continuation.";
+                        }
+                        else
+                        {
+                            sFore += '\n' + sSteeringFirstChapter;
+                        }
+                        languagestring = await LargeGPT.CallLargeChatGPT(answer3, "o3-mini");
+                        liness += 1;
+                    }
                     if (_prompt_provider.Contains("ChatGPT"))
                     {
                         if (_with_perkament.Contains("true"))

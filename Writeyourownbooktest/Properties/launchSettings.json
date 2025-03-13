@@ -2,7 +2,7 @@
   "profiles": {
     "Writeyourownbooktest": {
       "commandName": "Project",
-      "commandLineArgs": "\"talkfile\" \"US\" \"true\" \"ChatGPT\" \"true\" \"false\" \"true\""
+      "commandLineArgs": "\"talkBookComplete\""
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"

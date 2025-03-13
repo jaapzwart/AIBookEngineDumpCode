@@ -59,6 +59,7 @@ using System.Collections.Generic;
 using Anchor = DocumentFormat.OpenXml.Drawing.Wordprocessing.Anchor;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Text.Json;
 
 
 namespace Writeyourownbooktest
@@ -486,7 +487,7 @@ namespace Writeyourownbooktest
                 }
             }
         }
-public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, string headerText, string headerLevel, string fontType = "Old English Text MT")
+        public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, string headerText, string headerLevel, string fontType = "Old English Text MT")
         {
             try
             {
@@ -543,11 +544,11 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                         stylePart.Styles.Save();
                     }
 
-                    
+
                     // Create and append a page break before the header
                     Paragraph breakPara = new Paragraph(new Run(new Break() { Type = BreakValues.Page }));
                     mainPart.Document.Body.AppendChild(breakPara);
-                  
+
 
                     // Create a new paragraph with the specified header style
                     Paragraph para = new Paragraph();
@@ -595,7 +596,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
 
             return false;
         }
-       
+
         public static void RemovePageBreaksOnEmptyPages(string filePath)
         {
             using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(filePath, true))
@@ -2002,12 +2003,12 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                 string inputText = File.ReadAllText(filePath);
 
                 string[] liness = inputText.Split(new string[] { "Chapter:", "Paragraph:" }, StringSplitOptions.RemoveEmptyEntries);
-                
+
 
                 string[] chaptersAndParagraphs = inputText.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 string result = "";
 
-                
+
 
                 for (int i = 0; i < chaptersAndParagraphs.Length; i++)
                 {
@@ -2042,7 +2043,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                     if (!string.IsNullOrEmpty(result))
                     {
                         File.WriteAllText(bFile, result);
-                        
+
                     }
                     else
                     {
@@ -2054,7 +2055,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                     Console.WriteLine("Input file not found: " + filePath);
                 }
                 return "Success";
-                
+
             }
             else
             {
@@ -2162,7 +2163,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
 
             return destImage;
         }
-       
+
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// <summary>   Splits on line break. </summary>
@@ -2176,7 +2177,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
 
         public static List<string> SplitOnBR(string filePathWork)
         {
-            
+
             List<string> lines = ReadAndSplitTextFromFileBR(filePathWork, "<br>");
 
             return lines;
@@ -2286,7 +2287,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                         if (inParagraph)
                         {
                             lines.Add(paragraph.Trim());
-                            
+
                             paragraph = "";
                             inParagraph = false;
                         }
@@ -2294,18 +2295,18 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                     else
                     {
                         paragraph += line + " ";
-                        inParagraph = true;                      
+                        inParagraph = true;
                     }
                 }
 
                 // Add the last paragraph if it's not empty
                 if (inParagraph)
                 {
-                    
+
                     lines.Add(paragraph.Trim());
                 }
             }
-           
+
             return lines;
         }
 
@@ -2514,7 +2515,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
             try
             {
                 string _prefix = fileName;
-                
+
                 if (_prefix.Length > 0 && _prefix.Contains("Bible - ")) // First parts of the Bible
                 {
                     // Initialise client in a different place if you like
@@ -2814,7 +2815,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
         ///
         /// <returns>   True if the last table is closed, false if not. </returns>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        
+
         public static bool IsLastTableClosed(string html)
         {
             // Find the last occurrence of <table>
@@ -3244,7 +3245,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
                 return "0";
             }
         }
-       
+
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// <summary>   Writes a file to BLOB. </summary>
@@ -3431,18 +3432,18 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
         {
             float sRate = _speed;
             string ssml = $"<speak><prosody rate=\"{sRate}\">{textToSynthesize}</prosody></speak>";
-            
+
             // Set up the input text
             SynthesisInput input = new SynthesisInput
             {
                 Ssml = ssml
             };
-            
+
 
             // Configure the voice parameters (e.g., language, pitch, speaking rate)
             VoiceSelectionParams voiceSelection = new VoiceSelectionParams
             {
-                LanguageCode = "nl-NL", 
+                LanguageCode = "nl-NL",
                 Name = "nl-NL-Wavenet-D",
                 SsmlGender = SsmlVoiceGender.Female
             };
@@ -3477,7 +3478,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
         /// <param name="wavFile">          The WAV file. </param>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        public static void DoSpeakComputer(TextToSpeechClient client, string textToSynthesize, 
+        public static void DoSpeakComputer(TextToSpeechClient client, string textToSynthesize,
             float _speed, string wavFile)
         {
             float sRate = _speed;
@@ -3544,7 +3545,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
             {
                 LanguageCode = "en-US", // Language code (English, US)
                 Name = "en-US-Wavenet-D", // Voice name (adjust as needed)
-                SsmlGender = SsmlVoiceGender.Male 
+                SsmlGender = SsmlVoiceGender.Male
             };
 
             Google.Cloud.TextToSpeech.V1.AudioConfig audioConfig = new Google.Cloud.TextToSpeech.V1.AudioConfig
@@ -3635,7 +3636,7 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
             {
                 Ssml = ssml
             };
-            
+
             // Configure the voice parameters (e.g., language, pitch, speaking rate)
             VoiceSelectionParams voiceSelection = new VoiceSelectionParams
             {
@@ -3852,5 +3853,87 @@ public static void AppendHeaderToWordExtendedWithPageBreak(string filePath, stri
             }
         }
         #endregion
+      
+    }
+
+    public static class LargeGPT
+    {
+        private static readonly string apiKey = Secrets._o1;
+        private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
+       
+        public static async Task<string> CallLargeChatGPT(string prompt, string modell)
+        {
+            var response = await CallOpenAIAsync(prompt, modell);
+            Console.WriteLine(response);
+            return response;
+        }
+
+        static async Task<string> CallOpenAIAsync(string prompt, string modell)
+        {
+            int maxRetries = 10;
+            int retryCount = 0;
+            TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
+
+            while (retryCount < maxRetries)
+            {
+                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(100) })
+                {
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                    var requestBody = new
+                    {
+                        model = modell, // Change to "o1" if needed
+                        messages = new[]
+                        {
+                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "user", content = prompt }
+                },
+                        max_completion_tokens = 100000
+                    };
+
+                    string jsonContent = JsonConvert.SerializeObject(requestBody);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    try
+                    {
+                        HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                        response.EnsureSuccessStatusCode(); // Throw exception if not successful
+
+                        string responseString = await response.Content.ReadAsStringAsync();
+                        using JsonDocument doc = JsonDocument.Parse(responseString);
+
+                        return doc.RootElement
+                            .GetProperty("choices")[0]
+                            .GetProperty("message")
+                            .GetProperty("content")
+                            .GetString();
+                    }
+                    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                    {
+                        // Handle timeout
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("Request timed out after multiple retries.", ex);
+
+                        await Task.Delay(delay);
+                        delay *= 2; // Exponential backoff
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        // Handle other request errors (like network issues)
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("HTTP request failed after multiple retries.", ex);
+
+                        await Task.Delay(delay);
+                        delay *= 2;
+                    }
+                }
+            }
+
+            throw new Exception("Unexpected error: Maximum retries exceeded.");
+        }
+
     }
 }
+
