@@ -28,6 +28,12 @@ using DocumentFormat.OpenXml.Wordprocessing;
 using DocumentFormat.OpenXml;
 using OpenXmlPowerTools;
 using System.IO;
+using Aspose.Words;
+using DinkToPdf;
+using DinkToPdf.Contracts;
+using Aspose.Pdf;
+using PdfSharp.Pdf;
+using HtmlRendererCore.PdfSharp;
 
 using DocumentFormat.OpenXml.Drawing;
 using A = DocumentFormat.OpenXml.Drawing;
@@ -60,6 +66,12 @@ using Anchor = DocumentFormat.OpenXml.Drawing.Wordprocessing.Anchor;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Text.Json;
+using Aspose.Words;
+using Document = DocumentFormat.OpenXml.Wordprocessing.Document;
+using Body = DocumentFormat.OpenXml.Wordprocessing.Body;
+using Shading = DocumentFormat.OpenXml.Wordprocessing.Shading;
+using Inline = DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline;
+using static IronPython.Modules._ast;
 
 
 namespace Writeyourownbooktest
@@ -433,7 +445,7 @@ namespace Writeyourownbooktest
                             StyleId = "Heading1",
                             Type = StyleValues.Paragraph
                         };
-                        style.Append(new Name() { Val = headerlevel });
+                        style.Append(new DocumentFormat.OpenXml.Wordprocessing.Name() { Val = headerlevel });
                         style.Append(new BasedOn() { Val = "Normal" });
                         style.Append(new NextParagraphStyle() { Val = "Normal" });
                         style.Append(new UIPriority() { Val = 9 });
@@ -523,7 +535,7 @@ namespace Writeyourownbooktest
                             StyleId = headerLevel,
                             Type = StyleValues.Paragraph
                         };
-                        style.Append(new Name() { Val = headerLevel });
+                        style.Append(new DocumentFormat.OpenXml.Wordprocessing.Name() { Val = headerLevel });
                         style.Append(new BasedOn() { Val = "Normal" });
                         style.Append(new NextParagraphStyle() { Val = "Normal" });
                         style.Append(new UIPriority() { Val = 9 });
@@ -679,10 +691,10 @@ namespace Writeyourownbooktest
         /// </summary>
         /// <param name="basePath"></param>
         /// <returns></returns>
-        public static Dictionary<char, Image> LoadAlphabetImages(string directory)
+        public static Dictionary<char, System.Drawing.Image> LoadAlphabetImages(string directory)
         {
             // Dictionary to hold the images
-            Dictionary<char, Image> alphabetImages = new Dictionary<char, Image>();
+            Dictionary<char, System.Drawing.Image> alphabetImages = new Dictionary<char, System.Drawing.Image>();
 
             // Iterate over each letter of the alphabet
             for (char letter = 'A'; letter <= 'Z'; letter++)
@@ -692,7 +704,7 @@ namespace Writeyourownbooktest
 
                 if (File.Exists(filePath))
                 {
-                    Image image = Image.FromFile(filePath);
+                    System.Drawing.Image image = System.Drawing.Image.FromFile(filePath);
                     alphabetImages.Add(letter, image);
                     Console.WriteLine($"Loaded image for {letter}");
                 }
@@ -738,7 +750,7 @@ namespace Writeyourownbooktest
                         StyleId = "BoldText", // Custom Style ID
                         Type = StyleValues.Paragraph
                     };
-                    boldStyle.Append(new Name() { Val = "BoldText" });
+                    boldStyle.Append(new DocumentFormat.OpenXml.Wordprocessing.Name() { Val = "BoldText" });
                     boldStyle.Append(new BasedOn() { Val = "Normal" });
                     boldStyle.Append(new NextParagraphStyle() { Val = "Normal" });
                     boldStyle.Append(new UIPriority() { Val = 9 });
@@ -1163,7 +1175,7 @@ namespace Writeyourownbooktest
         public static void CreateQuoteBoxWithBackground(string imagePath, string outputPath, string quote, int fontSize = 16,
     string fontType = "Old English Text MT", int borderWidth = 5)
         {
-            using (Image image = Image.FromFile(imagePath))
+            using (System.Drawing.Image image = System.Drawing.Image.FromFile(imagePath))
             {
                 int pageWidth = 512; // example page width
                 float aspectRatio = (float)image.Width / image.Height;
@@ -1613,7 +1625,7 @@ namespace Writeyourownbooktest
         {
             // Load the image to get its dimensions
             int imageWidth, imageHeight;
-            using (Image image = Image.FromFile(imagePath))
+            using (System.Drawing.Image image = System.Drawing.Image.FromFile(imagePath))
             {
                 //imageWidth = image.Width;
                 imageWidth = imWidth;
@@ -3374,6 +3386,30 @@ namespace Writeyourownbooktest
                 return ex.Message;
             }
         }
+        public static async Task<string> WritePdfToBlobAsync(byte[] pdfBytes, string fileName, string containername)
+        {
+            try
+            {
+                string connS = Secrets.cloudStorageConnString;
+                var account = CloudStorageAccount.Parse(connS);
+                var blobClient = account.CreateCloudBlobClient();
+
+                var blobContainer = blobClient.GetContainerReference(containername);
+                await blobContainer.CreateIfNotExistsAsync();
+
+                CloudBlockBlob blockBlob = blobContainer.GetBlockBlobReference(fileName);
+                using (var stream = new MemoryStream(pdfBytes))
+                {
+                    await blockBlob.UploadFromStreamAsync(stream);
+                }
+
+                return "Success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
         #endregion
         #region Google
 
@@ -3853,9 +3889,9 @@ namespace Writeyourownbooktest
             }
         }
         #endregion
-      
-    }
 
+    }
+    
     public static class LargeGPT
     {
         private static readonly string apiKey = Secrets._o1;
@@ -3876,7 +3912,7 @@ namespace Writeyourownbooktest
 
             while (retryCount < maxRetries)
             {
-                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(100) })
+                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
                 {
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
@@ -3926,14 +3962,492 @@ namespace Writeyourownbooktest
                             throw new Exception("HTTP request failed after multiple retries.", ex);
 
                         await Task.Delay(delay);
-                        delay *= 2;
+                        delay *= 4;
                     }
                 }
             }
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
         }
+        public static async Task<string> GetGrok(string question)
+        {
+            string resultGrok = "";
+            // Your API key and base URL 
+            string apiKey = Secrets.GrokKey;
+            string baseURL = Secrets.GrokCompletionAddress;
+
+            // Create the HTTP client 
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                string gRok = "";
+                // Define the request body 
+                var requestBody = new
+                {
+                    model = "grok-beta",
+                    messages = new[]
+                    {
+                    new { role = "system", content = Secrets.GrokRole },
+                    new { role = "user", content = question }
+                    },
+                    max_tokens = 4096  // Set to the maximum allowed tokens for grok-beta
+                };
+
+                // Serialize the request body to JSON 
+                string json = JsonConvert.SerializeObject(requestBody);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Make the POST request 
+                HttpResponseMessage response = await client.PostAsync(baseURL, content);
+
+                // Read and output the response 
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    dynamic result = JsonConvert.DeserializeObject(responseBody);
+                    resultGrok = result.choices[0].message.content;
+                    gRok = resultGrok;
+
+                }
+                else
+                {
+                    resultGrok = response.StatusCode.ToString();
+                    gRok = resultGrok;
+
+                }
+            }
+            return resultGrok;
+
+        }
 
     }
+    public static class ConvertWordToHtml
+    {
+        public static void ConvertWToHtml(string wDocument, string hDocument)
+        {
+            string wordFilePath = wDocument;
+            string htmlFilePath = hDocument;
+
+            Converter(wordFilePath, htmlFilePath);
+        }
+
+        public static void Converter(string wordPath, string htmlPath)
+        {
+            // Load the Word document
+            Aspose.Words.Document doc = new Aspose.Words.Document(wordPath);
+
+            // Save as HTML
+            doc.Save(htmlPath, Aspose.Words.SaveFormat.Html);
+
+            Console.WriteLine("Conversion successful: " + htmlPath);
+        }
+    }
+
+public static class HtmlGenerator
+    {
+        public static void WriteHtmlHead(string htmlFilePath)
+        {
+            string htmlHead = @"<!DOCTYPE html>
+                <html lang=""en"">
+                <head>
+                    <meta charset=""UTF-8"">
+                    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                    <title>Image in HTML</title>
+                    <style>
+                        .image-container {
+                            text-align: center;
+                            margin: 20px auto;
+                            border: 2px solid black;
+                            display: inline-block;
+                            padding: 10px;
+                        }
+                        .image-container img {
+                            max-width: 1024px;
+                            height: auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                ";
+
+            // Append only if the file does not exist
+            if (!File.Exists(htmlFilePath))
+            {
+                File.AppendAllText(htmlFilePath, htmlHead, Encoding.UTF8);
+                Console.WriteLine("HTML head section appended successfully: " + htmlFilePath);
+            }
+            else
+            {
+                Console.WriteLine("HTML file already exists. Skipping head section.");
+            }
+        }
+
+        public static void AppendImageToHtml(string htmlFilePath, string imagePath)
+        {
+            string newContent = $@"
+                <center><div class=""image-container"">
+                    <img src=""{imagePath}"" alt=""Inserted Image"">
+                </div></center>";
+
+            AppendToBody(htmlFilePath, newContent, "Image HTML snippet appended successfully.");
+        }
+
+        public static void InsertQuotedText(string filePath, string quoteText, bool pageBreak, bool italic,
+                                            string colorBackground, bool _borders, string textColor,
+                                            string fontType = "Garamond", int fontSize = 16)
+        {
+            string fontStyle = italic ? "font-style: italic;" : "";
+            string borderStyle = _borders ? $"border: 2px solid {textColor};" : "";
+            string backgroundColor = !string.IsNullOrEmpty(colorBackground) ? $"background-color: {colorBackground};" : "";
+            string textColorStyle = $"color: {textColor};";
+            string fontSizeStyle = $"font-size: {fontSize}px;";
+            string fontFamily = $"font-family: '{fontType}', serif;";
+
+            string quoteHtml = $@"
+                <div style=""text-align: center; {borderStyle} {backgroundColor} padding: 10px; margin: 20px auto; width: 80%;"">
+                    <p style=""{fontFamily} {fontSizeStyle} {fontStyle} {textColorStyle} margin: 0;"">{quoteText}</p>
+                </div>";
+
+            if (pageBreak)
+                quoteHtml += "<div style='page-break-after: always;'></div>";
+
+            AppendToBody(filePath, quoteHtml, "Quoted text added successfully.");
+        }
+
+        public static void AppendBoldTextToHtml(string filePath, string text, bool pageBreak,
+                                                string fontType = "Old English Text MT", int fontSize = 24)
+        {
+            string boldTextHtml = $@"
+                <p style=""font-weight: bold; font-family: '{fontType}', serif; font-size: {fontSize}px; text-align: center;"">
+                    {text}
+                </p>";
+
+            if (pageBreak)
+                boldTextHtml += "<div style='page-break-after: always;'></div>";
+
+            AppendToBody(filePath, boldTextHtml, "Bold text added successfully.");
+        }
+
+        public static void AppendHeaderToHtml(string filePath, string headerText, string headerLevel,
+                                              string fontType = "Old English Text MT")
+        {
+            string validHeaderLevel = (headerLevel == "h1" || headerLevel == "h2" || headerLevel == "h3" ||
+                                       headerLevel == "h4" || headerLevel == "h5" || headerLevel == "h6")
+                                      ? headerLevel
+                                      : "h2";
+
+            string headerHtml = $@"
+                <{validHeaderLevel} style=""font-family: '{fontType}', serif; text-align: center; font-weight: bold; font-size: 32px;"">
+                    {headerText}
+                </{validHeaderLevel}>";
+
+            AppendToBody(filePath, headerHtml, "Header added successfully.");
+        }
+
+        public static void AppendTextToHtmlDocument(string filePath, string textToSynthesize,
+                                                    string fontType = "Old English Text MT", double fontSize = 14.5)
+        {
+            string[] paragraphs = textToSynthesize.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
+
+            StringBuilder formattedText = new StringBuilder();
+            foreach (string paragraphText in paragraphs)
+            {
+                if (!string.IsNullOrWhiteSpace(paragraphText))
+                {
+                    formattedText.AppendLine($@"
+                    <p style=""font-family: '{fontType}', serif; font-size: {fontSize}px; text-align: left; margin-bottom: 10px;"">
+                        {paragraphText}
+                    </p>");
+                }
+            }
+
+            AppendToBody(filePath, formattedText.ToString(), "Formatted text added successfully.");
+        }
+
+        public static void AppendClosingHtmlTags(string filePath)
+        {
+            if (!File.Exists(filePath)) return;
+
+            string htmlContent = File.ReadAllText(filePath, Encoding.UTF8);
+
+            if (!htmlContent.Contains("</body>") && !htmlContent.Contains("</html>"))
+            {
+                File.AppendAllText(filePath, "\n</body>\n</html>", Encoding.UTF8);
+                Console.WriteLine("Closing HTML tags appended successfully.");
+            }
+            else
+            {
+                Console.WriteLine("Closing HTML tags already exist. No changes made.");
+            }
+        }
+
+        public static string CreateHtmlDocument(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("HTML file already exists. Skipping creation.");
+                return filename;
+            }
+
+            string emptyHtmlContent = @"<!DOCTYPE html>
+            <html lang=""en"">
+            <head>
+                <meta charset=""UTF-8"">
+                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                <title>Image in HTML - A4 Format</title>
+                <style>
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 16px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    .text-container {
+                        width: 100%;
+                        margin: auto;
+                        margin-bottom: 40mm;
+                        padding: 2px;
+                        font-family: Arial, sans-serif;
+                        font-size: 12pt;
+                        line-height: 1.5;
+                        text-align: justify;
+                    }
+
+                    .a4-page {
+                        width: 210mm;
+                        height: 297mm;
+                        max-width: 210mm;
+                        aspect-ratio: 210 / 297;
+                        margin: auto;
+                        padding: 5mm 5mm 20mm 5mm;
+                        background: white;
+                        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                    }
+
+                    @media print {
+                        body {
+                            margin: 0;
+                            padding: 0;
+                        }
+                        .a4-page {
+                            width: 210mm;
+                            height: 297mm;
+                            max-width: 210mm;
+                            aspect-ratio: 210 / 297;
+                            margin: auto;
+                            padding: 5mm 5mm 20mm 5mm;
+                            box-shadow: none;
+                        }
+                    }
+
+                    .image-container {
+                        text-align: center;
+                        margin: 10px auto;
+                        border: 1px solid black;
+                        display: inline-block;
+                        padding: 6px;
+                    }
+
+                    .image-container img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                </style>
+            </head>
+            <body>
+            <center>
+                <h1>The Agile Coach in complex organizational Agile Transitions</h1>
+                <div class=""image-container"">
+                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\Create a Perry Rhodan oriented SF image from the fifties.jpg"" alt=""Inserted Image"">
+                </div>
+            </center>
+            <div style='page-break-after: always;'></div>
+            <br /><br /><br /><br />
+            <div style=""text-align: center; background-color: white; padding: 6px; margin: 10px auto;"">
+                <p style=""font-family: 'Garamond', serif; font-size: 25px; font-style: italic; color: black; margin: 0;"">
+                    Inspired by Agility.
+                </p>
+            </div>
+            <div style='page-break-after: always;'></div>
+            <div class='text-container'>
+                   
+            </div>
+            </body>
+            </html>";
+
+
+            File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
+            Console.WriteLine("HTML document created successfully at: " + filename);
+            return filename;
+        }
+        public static List<string> tocTitles = new List<string>();
+        public static string tocHead = "\n<div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div>\n";
+        public static void AppendToBody(string filePath, string contentToAdd, string successMessage)
+        {
+            if (!File.Exists(filePath)) return;
+
+            string htmlContent = File.ReadAllText(filePath, Encoding.UTF8);
+
+            // Find the position of the text-container div
+            int textContainerIndex = htmlContent.IndexOf("<div class='text-container'>", StringComparison.OrdinalIgnoreCase);
+            if (textContainerIndex != -1)
+            {
+                int tocIndex = htmlContent.IndexOf("<div id=\"toc\">", StringComparison.OrdinalIgnoreCase);
+                if (tocIndex == -1)
+                {
+                    // Insert TOC before the text-container div
+                    htmlContent = htmlContent.Insert(textContainerIndex, "\n" +
+                        "<div class='text-container'><div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div></div>\n");
+                }
+            }
+
+            // Process H1 tags for TOC (handling inline styles)
+            var matches = Regex.Matches(contentToAdd, "<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            foreach (Match match in matches)
+            {
+                string headingText = Regex.Replace(match.Groups[1].Value, "<.*?>", "").Trim(); // Remove inner HTML tags
+                string anchorId = Regex.Replace(headingText, "[^a-zA-Z0-9]", "_").ToLower();
+                string anchorTag = $"<h1 id=\"{anchorId}\" {match.Value.Substring(3)}";
+
+                // Replace original H1 with anchored version
+                contentToAdd = contentToAdd.Replace(match.Value, anchorTag);
+
+                // Add TOC entry
+                string tocEntry = $"<li><a href=\"#{anchorId}\">{headingText}</a></li>";
+                int tocListIndex = htmlContent.IndexOf("<div id=\"toc\"><h2>Table of Contents</h2><ul>", StringComparison.OrdinalIgnoreCase);
+                if (tocListIndex != -1)
+                {
+                    int ulEndIndex = htmlContent.IndexOf("</ul>", tocListIndex, StringComparison.OrdinalIgnoreCase);
+                    if (ulEndIndex != -1)
+                    {
+                        htmlContent = htmlContent.Insert(ulEndIndex, tocEntry + "\n");
+                    }
+                }
+            }
+
+            // Insert content properly before </body>
+            int bodyCloseIndex = htmlContent.LastIndexOf("</div>", StringComparison.OrdinalIgnoreCase);
+            if (bodyCloseIndex != -1)
+            {
+                htmlContent = htmlContent.Insert(bodyCloseIndex, contentToAdd + Environment.NewLine);
+            }
+            else
+            {
+                Console.WriteLine("No </body> tag found. Appending content at the end of the file.");
+                htmlContent += contentToAdd + Environment.NewLine;
+            }
+
+            File.WriteAllText(filePath, htmlContent, Encoding.UTF8);
+            Console.WriteLine(successMessage);
+        }
+
+
+
+        public static void orgAppendToBody(string filePath, string contentToAdd, string successMessage)
+        {
+            if (!File.Exists(filePath)) return;
+
+            string htmlContent = File.ReadAllText(filePath, Encoding.UTF8);
+            int bodyCloseIndex = htmlContent.LastIndexOf("</div>", StringComparison.OrdinalIgnoreCase);
+
+            if (bodyCloseIndex != -1)
+            {
+                htmlContent = htmlContent.Insert(bodyCloseIndex, 
+                    contentToAdd + Environment.NewLine);
+            }
+            else
+            {
+                Console.WriteLine("No </body> tag found. Appending content at the end of the file.");
+                htmlContent += contentToAdd + Environment.NewLine;
+            }
+
+            File.WriteAllText(filePath,
+                htmlContent, Encoding.UTF8);
+            Console.WriteLine(successMessage);
+        }
+    }
+    /// <summary>
+    /// Convert Html to Pdf
+    /// </summary>
+    public static class ConvertHmlToPdf
+    {
+        public static void ConvertToPdfAspose(string html, string pdf)
+        {
+            // Path to input HTML and output PDF
+            string htmlPath = html;
+            string pdfPath = pdf;
+
+            // Create HTMLLoadOptions
+            HtmlLoadOptions options = new HtmlLoadOptions();
+
+            // Load HTML file into Document
+            Aspose.Pdf.Document pdfDocument = new Aspose.Pdf.Document(html, options);
+
+            // Save as PDF
+            pdfDocument.Save(pdfPath);
+
+            Console.WriteLine("HTML converted to PDF successfully!");
+        }
+        public static void ConvertToPdf_PdfSharp(string html, string pdf)
+        {
+            string htmlP = File.ReadAllText(html); // or use hardcoded HTML
+            PdfSharpCore.Pdf.PdfDocument pdfP = PdfGenerator.GeneratePdf(htmlP, PdfSharpCore.PageSize.A4);
+            pdfP.Save(pdf);
+
+            Console.WriteLine("PDF created successfully.");
+        }
+        public static void ConvertToPdf_IronPdf(string html, string pdf)
+        {
+            // Path to your HTML file
+            string htmlFilePath = html;
+            string pdfPath = pdf;
+
+            // Read the HTML content from file
+            string htmlContent = File.ReadAllText(htmlFilePath);
+
+            // Create the renderer
+            var renderer = new HtmlToPdf();
+
+            // Convert the HTML to PDF
+            var pdfIron = renderer.RenderHtmlAsPdf(htmlContent);
+
+            // Save the PDF
+            pdfIron.SaveAs(pdfPath);
+
+            Console.WriteLine("Iron PDF created from HTML file.");
+        }
+        public static void ConvertToPdf_Dink(string html, string pdf, string _baseUrl)
+        {
+            // Path to your HTML file
+            string htmlFilePath = html;
+
+            // Read HTML content
+            string htmlContent = File.ReadAllText(htmlFilePath);
+
+            // Optional: Base URL so relative image paths can be resolved
+            string baseUrl = _baseUrl;
+
+
+            var renderer = new ChromePdfRenderer();
+
+            renderer.RenderingOptions = new ChromePdfRenderOptions
+            {
+                EnableJavaScript = true                     
+            };
+
+            // Convert HTML to PDF
+            var pdfDink = renderer.RenderHtmlAsPdf(htmlContent);
+
+            // Save the PDF
+            pdfDink.SaveAs(pdf);
+
+            Console.WriteLine("Dink PDF with images created.");
+        }
+    }
+
 }
 

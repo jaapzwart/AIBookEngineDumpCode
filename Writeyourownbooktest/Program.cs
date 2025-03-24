@@ -38,6 +38,9 @@ using Path = System.IO.Path;
 using System.Runtime.CompilerServices;
 using static Google.Rpc.Context.AttributeContext.Types;
 using System.Security.Policy;
+using PdfSharp.Pdf;
+using HtmlRendererCore.PdfSharp;
+
 
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -75,6 +78,18 @@ using System.Drawing;  // Ensure you have System.Drawing.Common installed via Nu
 using System.IO;
 using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
+using Aspose.Words;
+using Google.Rpc;
+using static Google.Cloud.AIPlatform.V1.FunctionCallingConfig.Types;
+using static HuggingFace.RecommendedModelIds.Llama2;
+using System.Diagnostics.Contracts;
+using DocumentFormat.OpenXml.Drawing;
+using Microsoft.CognitiveServices.Speech.Diagnostics.Logging;
+using Microsoft.ML.Trainers;
+using OpenXmlPowerTools.HtmlToWml.CSS;
+using OpenXmlPowerTools;
+using PdfSharp.Pdf.Content.Objects;
+using NAudio.CoreAudioApi;
 
 
 
@@ -1422,6 +1437,30 @@ class Program
             }
             Console.WriteLine("File done, lines:" + lines.Count.ToString());
         }
+        else if (args[0] != null && args[0].Contains("convertDocxToHtml"))
+        {
+            try
+            {
+                string appPath = AppDomain.CurrentDomain.BaseDirectory;
+                string filePath = appPath + "talkfilebook_20250315203125834.docx";
+                string fileHtml = appPath + "talkfilebook_20250315203125834.html";
+                ConvertWordToHtml.ConvertWToHtml(filePath, fileHtml);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Error converter:" + ex.Message);
+            }
+        }
+        else if (args[0] != null && args[0].Contains("talkBookConvertHtmlToPdf"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string filename = "talkfilebook_20250323223005401";
+            string chapterTitlesPathHtml = filename + ".html";
+            string chapterTitlesPathPdf = filename + ".pdf";
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+        }
         else if (args[0] != null && args[0].Contains("talkBookComplete"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
@@ -1431,9 +1470,53 @@ class Program
             // Create the Word document
             string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
             string chapterTitlesPath = "talkfilebook_" + filename + ".docx";
+            string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
             //string chapterTitlesPath = "talkfile_conversation20250302001811548.docx";
             string outputFilePath = appPath + chapterTitlesPath;
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
+
+            string iimage, sClean, getQuote, sQuote, imagePath, makingImage, Simage;
+            bool success;
+
+            #region Create image For the starter of the book
+            iimage = GlobalMethods.GetSubStringForImages("##Create a Perry Rhodan oriented SF image from the fifties", "##");
+            sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
+                    .Replace("\"", "").Replace(";", "");
+            imagePath = "";
+
+            // Do image
+            //
+            makingImage = "Create a Perry Rhodan oriented SF image from the fifties ";
+            Simage = await GetDalleGood(makingImage
+                       + iimage);
+            if (Simage.Contains("Bad Request")) // Probably from words and length
+            {
+                Simage = await GetDalleGood(makingImage
+                + sClean);
+            }
+            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+            success = false;
+            while (!success) // Sometimes this went wrong (time issue), so, while wrong repeat and it worked.
+            {
+                try
+                {
+                    await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                    success = true; // If the method completes successfully, set success to true to exit the loop
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                    // Optionally, you can add a delay here before retrying
+                    // await Task.Delay(1000); // Delay for 1 second
+                }
+            }
+            #endregion
+
+            HtmlGenerator.CreateHtmlDocument(outputFilePathHtml);
 
             List<string> lines = new List<string>();
 
@@ -1441,62 +1524,87 @@ class Program
             try
             {
                 string bookPlot = "";
+
+                #region Fill some main vars from file
                 using (StreamReader readerPlot = new StreamReader(filePlot))
                 {
-                    string line;
-                    while ((line = readerPlot.ReadLine()) != null)
+                    string lline;
+                    while ((lline = readerPlot.ReadLine()) != null)
                     {
                         // Add each line to the list
-                        bookPlot += line + '\n';
+                        bookPlot += lline + '\n';
                     }
                 }
                 string bookTitles = "";
                 using (StreamReader readerTitles = new StreamReader(filePath))
                 {
-                    string line;
-                    while ((line = readerTitles.ReadLine()) != null)
+                    string lline;
+                    while ((lline = readerTitles.ReadLine()) != null)
                     {
                         // Add each line to the list
-                        bookTitles += line + '\n';
+                        bookTitles += lline + '\n';
                     }
                 }
                 // Read all lines from the file
                 using (StreamReader reader = new StreamReader(filePath))
                 {
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
+                    string lline;
+                    while ((lline = reader.ReadLine()) != null)
                     {
                         // Add each line to the list
-                        lines.Add(line);
-                        allBookTitles += line + '\n';
+                        lines.Add(lline);
+                        allBookTitles += lline + '\n';
                     }
                 }
+                #endregion
+
+                string _examples = args[1];
+               
+                #region Init Some vars
                 int liness = 0;
                 string getResponse = "";
                 string getSummary = "";
                 string sFore = "";
                 string bigStory = "";
-                //using (StreamWriter writer = new StreamWriter(outputFilePath, false)) // Overwrite file
-                //{
-                foreach (string line in lines)
-                {
-                    sFore = line;
+                #endregion
 
+                string sPrevious = "";
+                string line = "";
+                for(int i = 0; i < lines.Count; i++)
+                {
+                    sFore = lines[i].ToString();
+                    line = sFore;
+                    
+                    #region Create Image in the lines
                     // Prep quote
                     // 
-                    string iimage = GlobalMethods.GetSubStringForImages(line,
-                        "Write in the style of Stephen King. Write an extensive large book chapter with rich intelligent dialogs and characters on the title - ");
-                    string sClean =
+                    if(_examples.Contains("yes"))
+                    {
+                        iimage = GlobalMethods.GetSubStringForImages(line,
+                            "Write scientifically as a researcher on the Agile Coach within complex organizational Agile transitions on the title – ");
+                    }
+                    if (_examples.Contains("doclonghtml"))
+                    {
+                        iimage = GlobalMethods.GetSubStringForImages(line,
+                            "Write an exciting long elaborated detailed book chapter for a thriller in the style of John Grisham on the title – ");
+                    }
+                    if(_examples.Contains("dochtml"))
+                    {
+                       
+                        iimage = GlobalMethods.GetSubStringForImages(line,
+                           "Write in the style of Isaac Asimov Arthur C Clarke and Neil Stephenson. Write an extensive large book chapter with rich intelligent dialogs and characters on the title – ");
+                    }
+                    sClean =
                             iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
                             .Replace("\"", "").Replace(";", "");
-                    string getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
-                    string sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                    string imagePath = "";
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                    imagePath = "";
 
                     // Do image
                     //
-                    string makingImage = "Create a dark horror oriented image WTHOUT TEXT in the image based on "; ;
-                    string Simage = await GetDalleGood(makingImage
+                    makingImage = "Create an Agile Coach oriented image ";
+                    Simage = await GetDalleGood(makingImage
                                + sQuote);
                     if (Simage.Contains("Bad Request")) // Probably from words and length
                     {
@@ -1505,7 +1613,7 @@ class Program
                     }
                     await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
 
-                    bool success = false;
+                    success = false;
                     while (!success) // Sometimes this went wrong (time issue), so, while wrong repeat and it worked.
                     {
                         try
@@ -1520,55 +1628,351 @@ class Program
                             // await Task.Delay(1000); // Delay for 1 second
                         }
                     }
+                    #endregion
+
+                    #region Append Titles in the lines
                     // Write title of chapter
                     // 
-                    GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(outputFilePath, iimage, "Heading 1", "Times New Roman");
-
-                    // Write image and quote
-                    // 
-                    imagePath = appPath + sClean + ".jpg";
-                    GlobalMethods.AddImageToWordDocument(outputFilePath, imagePath);
-                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
-                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                    GlobalMethods.InsertQuotedText(outputFilePath, sQuote, true, false, "White", false, "Black"); // Quote with Page Break
-
-                   
-                    // Line specifics
-                    // 
-                    if (liness >= 1)
+                    if (_examples.Contains("yes"))
                     {
-                        sFore += " and Continue the story based on the previous chapter " +
-                        getResponse +
-                        " and make it a natural continuation.";
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
+                    }
+                    else if (_examples.Contains("doclonghtml"))
+                    {
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
+                    }
+                    else if(_examples.Contains("dochtml"))
+                    {
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
                     }
                     else
                     {
-                        sFore += " and base this first chapter around the plot when Rachel returns - "
-                            + bookPlot
-                            ;
+                        GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(outputFilePath, iimage, "Heading 1", "Times New Roman");
                     }
+                    #endregion
 
-                    // Do the response logic
+                    #region Write image and quote in lines
+                    // Write image and quote
                     // 
-                    getResponse = await LargeGPT.CallLargeChatGPT(sFore, "o1") + "\n\n";
-                    //getSummary = await LargeGPT.CallLargeChatGPT("Write a large summary " +
-                    //    "that holds all main important ingredients of this chapter - " + getResponse, "o3-mini") + "\n\n";
-                    getResponse.Replace(line, "");
+                    if (_examples.Contains("yes")) // When we do a knowledge book
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
+                    }
+                    else if (_examples.Contains("doclonghtml"))
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
+                    }
+                    else if(_examples.Contains("dochtml"))
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
+                    }
+                    else
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        GlobalMethods.AddImageToWordDocument(outputFilePath, imagePath);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        GlobalMethods.InsertQuotedText(outputFilePath, sQuote, true, false, "White", false, "Black"); // Quote with Page Break
+                    }
+                    #endregion
 
-                    // Writing text and quote
-                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
-                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                    GlobalMethods.InsertQuotedText(outputFilePath, sQuote, false, false, "White", false, "Black", "Garamond", 14); // Quote without Page Break
-                    GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(outputFilePath, getResponse, "Times New Roman", 12);
+                    #region Determine the chapters
+                    // Line specifics
+                    // 
+
+                    if (_examples.Contains("doclonghtml"))
+                    {
+                        List<string> sForPlot = new List<string>();
+                        string sForOrg = sFore;
+                        if (liness >= 0)
+                        {
+                            sForPlot.Add(lines[i + 1].ToString());
+                            sForPlot.Add(lines[i + 2].ToString());
+                            sForPlot.Add(lines[i + 3].ToString());
+                            i += 3;
+                            int iLine = 1;
+                            string sPlotters = "";
+                            foreach (string sLine in sForPlot)
+                            {
+                                if (liness >= 1)
+                                {
+                                    sFore += "  and write on this plotline " +
+                                    sLine +
+                                    " and build further on " + sPrevious +
+                                    "Continue expanding James' world—with Clare, Memfy, and Mary at its emotional and ethical center—while introducing new characters only when they add complexity to the legal stakes, deepen personal tensions, or shift the moral compass of the narrative." +
+                                    "Render characters with rich, believable detail—highlighting their vulnerabilities, convictions, and evolving loyalties." +
+                                    "Ground each scene in everyday realism, whether it's a sunlit church gathering or a tense private conversation—settings should echo the emotional charge of each moment." +
+                                    "Construct dialogues that reveal more than words: let each exchange unveil hidden motives, test personal values, and intensify the psychological drama at the core of James' unfolding decisions.";
+                                    sPrevious = sPlotters;
+                                }
+                                else
+                                {
+                                    sFore += "  and write on this plotline " +
+                                    sLine + bookPlot +
+                                    " and build further on " + sPlotters +
+                                    "Use characters from James' world—Clare, Memfy, Mary, and James himself—placing them at the emotional and ethical heart of the story. Introduce new characters only when they deepen the legal tension, complicate relational dynamics, or challenge the moral equilibrium that holds their world together." +
+                                    "Portray each character with depth and humanity, revealing their vulnerabilities, convictions, and shifting loyalties in the face of personal and ethical dilemmas." +
+                                    "Immerse each scene in tangible, everyday settings—whether a quiet church pew, a warm family kitchen, or a tense legal consultation—ensuring that the environment mirrors the emotional temperature of the moment." +
+                                    "Craft layered, emotionally intelligent dialogue that feels real and resonant—conversations should expose what characters can’t admit aloud, test their values, and heighten the psychological suspense at the center of James' increasingly complex choices.";
+
+
+
+                                }
+                                string front = "Make sure the text is put in an easy to read overview. Like this:"
+                                + "<p>paragraph</p>"
+                                + " but do not mention the chapter number and title at the start of the chapter.";
+
+                                getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                                getResponse.Replace(sForOrg + sLine, "");
+                                sPlotters += getResponse;
+                                sFore = sForOrg;
+                                
+                                if (iLine == 1)
+                                {
+                                    // Writing text and quote
+                                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+                                }
+                                HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, sLine, false, "Times New Roman", 20);
+                                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);
+                                iLine += 1;
+                            }
+                            sPrevious = sPlotters;
+                        }
+                        
+                       
+                    }
+                    else if(_examples.Contains("dochtml"))
+                    {
+                        if (liness >= 1)
+                        {
+                            sFore += " and Continue the story based on the previous chapter " +
+                            getResponse +
+                            " and make it a natural continuation"
+                            + " and make it a thought provoking chapter with intelligent literature design and twists." +
+                            " Use characters from the Perry Rhodan Universe and introduce new ones when it makes the storyline stronger and more interesting." +
+                                    " Use detailed character description, detailed scenery description, detailed emotion telling and" +
+                                    " elaborate interactive dialoques between characters in an intelligent, catchy and thought provoking manner."; ;
+                        }
+                        else
+                        {
+                            sFore += " and base this first chapter around the plot - "
+                                + bookPlot
+                                + " and make it a thought provoking chapter with intelligent literature design and twists." +
+                                " Use characters from the Perry Rhodan Universe and introduce new ones when it makes the storyline stronger and more interesting." +
+                                    " Use detailed character description, detailed scenery description, detailed emotion telling and" +
+                                    " elaborate interactive dialoques between characters in an intelligent, catchy and thought provoking manner."; ;
+                        }
+                    }
+                    else if (_examples.Contains("yes")) // Educational book
+                    {
+                        if (liness >= 1)
+                        {
+                            sFore += " and Continue the story based on the previous chapter " +
+                            getResponse +
+                            " and make it a natural continuation"
+                            + " and make it a thought provoking educational chapter with intelligent descriptions." +
+                            "Use examples from other literature reviews and examples from real life in organizations.";
+                        }
+                        else
+                        {
+                            sFore += " and base this first chapter around the plot - "
+                                + bookPlot
+                                + " and make it a thought provoking educational chapter with intelligent descriptions." +
+                                "Use examples from other literature reviews and examples from real life in organizations.";
+                        }
+                    }
+                    else
+                    {
+
+                    }
+                    #endregion
+
+                    #region Write the chapter content in the lines
+                    if (_examples.Contains("xx"))
+                    {
+                        string front = "Give an alaborate long chapter. Make sure the text is put in an easy to read overview. ";
+                            //+ "Like this:"
+                            //+ "<h3>Introduction</h3><font face=\"Arial\" size=\"5\">content</font>"
+                            //+ "<h3>paragraph title</h3><font face=\"Arial\" size=\"5\">content</font>"
+                            //+ "<h3>Example</h3><font face=\"Arial\" size=\"5\">content</font>"
+                            //+ "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            //+ "<h3>Conclusion</h3><font face=\"Arial\" size=\"5\">content</font>"
+                            //+ " and user html tables and lists when needed to even add more structure to the content." +
+                            //"Keep the font the same size and as the body font.";
+
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        getResponse.Replace(line, "");
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+
+                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "The Theory", false, "Arial", 20);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
+
+                        string sForeExample = getResponse;
+                        front = "Give extensive examples with elaborative long text based on the previous part." +
+                            "Keep app font the same size." +
+                            "Make sure the text is put in an easy to read overview. Like this:"
+                            + "<h3>Introduction</h3><font face=\"Arial\" size=\"4\">content</font>"
+                            + "<h3>paragraph title</h3><font face=\"Arial\" size=\"4\">content</font>"
+                            + "<h3>Example</h3><font face=\"Arial\" size=\"4\">content</font>"
+                            + "<h3>Tips</h3><font face=\"Arial\" size=\"4\">content</font>"
+                            + "<h3>Conclusion</h3><font face=\"Arial\" size=\"4\">content</font>"
+                            + " and put all other text in <font face=\"Arial\" size=\"4\">content</font>"
+                            + " and user html tables and lists when needed to even add more structure to the content." +
+                            "Keep the font the same as the body font.";
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1") + "\n\n";
+                        
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "Examples", false, "Arial", 20);
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
+                    }
+                    else if (_examples.Contains("yes"))
+                    {
+                        string front = "Make sure the text is put in an easy to read overview."
+                            + "Like this:"
+                            + "<h3>Introduction</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>paragraph title</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Example</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Conclusion</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + " and user html tables and lists when needed to even add more structure to the content."
+                            + "Keep the font the same size and as the body font."
+                            + "<p>paragraph</p>"
+                            + " but do not mention the chapter number and title at the start of the chapter.";
+
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        //getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
+                        //Console.WriteLine("\n\n" + "CHAPTER TEXT" + "\n\n" + getResponse);
+
+                        getResponse.Replace(line, "");
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+
+                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "The Theory", false, "Arial", 20);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);
+
+                        string sForeExample = getResponse;
+                        front = "Give extensive examples with elaborative long text based on the previous part."
+                            + "Like this:"
+                            + "<h3>Introduction</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>paragraph title</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Example</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + "<h3>Conclusion</h3><font face=\"Arial\" size=\"3\">content</font>"
+                            + " and user html tables and lists when needed to even add more structure to the content."
+                            + "Keep the font the same size and as the body font."
+                            + "<p>paragraph</p>"
+                            + " but do not mention the chapter number and title at the start of the chapter.";
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1") + "\n\n";
+
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "Examples", false, "Arial", 20);
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
+
+
+                    }
+                    else if(_examples.Contains("dochtml"))
+                    {
+                        string front = "Make sure the text is put in an easy to read overview. Like this:"
+                            + "<p>paragraph</p>"
+                            + " but do not mention the chapter number and title at the start of the chapter.";
+
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        //getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
+                        //Console.WriteLine("\n\n" + "CHAPTER TEXT" + "\n\n" + getResponse);
+
+                        getResponse.Replace(line, "");
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
+
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);                  
+                    }
+                    else if(_examples.Contains("somethingelse"))
+                    {
+                        getResponse = await LargeGPT.CallLargeChatGPT(sFore, "o1") + "\n\n";
+                        getResponse.Replace(line, "");
+
+                        // Writing text and quote
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        GlobalMethods.InsertQuotedText(outputFilePath, sQuote, false, false, "White", false, "Black", "Garamond", 22); // Quote without Page Break
+
+                        GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(outputFilePath, getResponse, "Times New Roman", 12);
+                    }
+                    #endregion
+
                     //await writer.WriteLineAsync(getResponse);
                     liness += 1;
                 }
-                //}
-               
+                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, appPath);
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN_The Infinity Paradox.pdf", "mindscripted");
+                Console.WriteLine("PDF upload to Blob:" + result);
+                //HtmlGenerator.AppendClosingHtmlTags("output.html");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error:" + ex.Message);
+            }
+           
+        }
+        else if(args[0] != null && args[0].Contains("pdfRender"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            // Create the Word document
+            string chapterTitlesPathHtml = "Perry rhodan the shadow fractal" + ".html";
+            string chapterTitlesPathPdf = "Perry rhodan the shadow fractal" + ".pdf";
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            Console.WriteLine("Starting PDF logic.");
+            try
+            {
+                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                Console.WriteLine("Pdf converted, starting the upload to blob");
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - NC 1 - 1.The Shadow Fractal.pdf", "mindscripted");
+                Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch(Exception ex)
             {
-                Console.WriteLine("Error:" + ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
         // "talk" "subject" "US" 0.85 3
@@ -1597,7 +2001,7 @@ class Program
                 sFore = "";
                 bigStory = "";
                 //--------------------------------------
-                
+
                 string appPath = AppDomain.CurrentDomain.BaseDirectory;
                 string filePath = "FileTalk.txt"; // Replace with your file path
                 List<string> lines = new List<string>();
@@ -1643,7 +2047,7 @@ class Program
                     string foreWordFromFile = "";
                     string introductionFromFile = "";
                     string afterWordFromFile = "";
-                    
+
                     if (File.Exists(_talkfilePrefix))
                     {
                         // Open the file and read the first line
