@@ -4196,18 +4196,58 @@ public static class HtmlGenerator
                 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
                 <title>Image in HTML - A4 Format</title>
                 <style>
-                    body {
-                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        font-size: 16px;
-                        color: #000;
-                        background-color: #fff;
-                        line-height: 1.6;
-                        margin: 0;
-                        padding: 0;
+                        p {
+ 			                font-family: 'Arial, sans-serif;
+                                        font-size: 14px;
+                                        color: #000;
+                                        background-color: #fff;
+                                        line-height: 1.6;
+                                        margin: 0;
+                                        padding: 0;
+
+			                }
+		                table {
+ 			                font-family: 'Arial, sans-serif;
+                                        font-size: 14px;
+                                        color: #000;
+                                        background-color: #fff;
+                                        line-height: 1.6;
+                                        margin: 0;
+                                        padding: 0;
+
+			                }
+		                ul {
+ 			                font-family: 'Arial, sans-seriff;
+                                        font-size: 12px;
+                                        color: #000;
+                                        background-color: #fff;
+                                        line-height: 1.6;
+                                        margin: 0;
+                                        padding: 0;
+
+			                }
+		                li {
+ 			                font-family: 'Arial, sans-seriff;
+                                        font-size: 14px;
+                                        color: #000;
+                                        background-color: #fff;
+                                        line-height: 1.6;
+                                        margin: 0;
+                                        padding: 0;
+
+			                }
+                        body {
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                            font-size: 16px;
+                            color: #000;
+                            background-color: #fff;
+                            line-height: 1.6;
+                            margin: 0;
+                            padding: 0;
                     }
 
                     .text-container {
-                        width: 100%;
+                        width: 95%;
                         margin: auto;
                         margin-bottom: 40mm;
                         padding: 2px;
@@ -4260,19 +4300,22 @@ public static class HtmlGenerator
             </head>
             <body>
             <center>
-                <h1>The Agile Coach in complex organizational Agile Transitions</h1>
+                <h1>Steel and Stars - The Aurora Paradox</h1>
                 <div class=""image-container"">
-                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\Create a Perry Rhodan oriented SF image from the fifties.jpg"" alt=""Inserted Image"">
+                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image.jpg"" alt=""Inserted Image"">
                 </div>
             </center>
             <div style='page-break-after: always;'></div>
             <br /><br /><br /><br />
-            <div style=""text-align: center; background-color: white; padding: 6px; margin: 10px auto;"">
-                <p style=""font-family: 'Garamond', serif; font-size: 25px; font-style: italic; color: black; margin: 0;"">
-                    Inspired by Agility.
-                </p>
-            </div>
-            <div style='page-break-after: always;'></div>
+            <div style=""text-align: center;  background-color: white; padding: 10px; margin: 20px auto; width: 80%;"">
+            <p style=""font-family: 'Garamond', serif; font-size: 25px; font-style: italic; color: black; margin: 0;"">
+
+                Inspired by AI. 
+                <br />In the style of:<br /><br />
+                <br />Artificial Intelligence.<br /><br /><br />
+                Images based on AI.
+            </p>
+        </div><div style='page-break-after: always;'></div>
             <div class='text-container'>
                    
             </div>
@@ -4375,6 +4418,7 @@ public static class HtmlGenerator
     /// </summary>
     public static class ConvertHmlToPdf
     {
+        
         public static void ConvertToPdfAspose(string html, string pdf)
         {
             // Path to input HTML and output PDF

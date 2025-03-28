@@ -2,7 +2,7 @@
   "profiles": {
     "Writeyourownbooktest": {
       "commandName": "Project",
-      "commandLineArgs": "\"pdfRender\""
+      "commandLineArgs": "\"talkBookComplete\" \"dochtml\""
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"

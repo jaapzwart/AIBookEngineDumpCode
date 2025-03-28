@@ -1454,7 +1454,7 @@ class Program
         else if (args[0] != null && args[0].Contains("talkBookConvertHtmlToPdf"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string filename = "talkfilebook_20250323223005401";
+            string filename = "book_20250323223005401";
             string chapterTitlesPathHtml = filename + ".html";
             string chapterTitlesPathPdf = filename + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
@@ -1478,18 +1478,46 @@ class Program
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
 
-            string iimage, sClean, getQuote, sQuote, imagePath, makingImage, Simage;
+            string sClean, getQuote, sQuote, imagePath, Simage;
+            string iimage = "";
+            string makingImage = "";
             bool success;
+            string _examples = args[1];
 
             #region Create image For the starter of the book
-            iimage = GlobalMethods.GetSubStringForImages("##Create a Perry Rhodan oriented SF image from the fifties", "##");
+            // Place this string also in the HTML part
+            if (_examples.Contains("dochtml"))
+            {
+                iimage = GlobalMethods.GetSubStringForImages("##Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image", "##");
+            }
+            if (_examples.Contains("doclonghtml"))
+            {
+                iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
+            }
+            if (_examples.Contains("doclearn"))
+            {
+                iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
+            }
+            
             sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
                     .Replace("\"", "").Replace(";", "");
             imagePath = "";
-
+            
             // Do image
             //
-            makingImage = "Create a Perry Rhodan oriented SF image from the fifties ";
+            if (_examples.Contains("dochtml"))
+            {
+                makingImage = "Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image ";
+            }
+            if (_examples.Contains("doclonghtml"))
+            {
+                makingImage = "Create an artificial intelligence image on the topic - ";
+            }
+            if (_examples.Contains("doclearn"))
+            {
+                makingImage = "Create a mathematical image inspired by artificial intelligence on ";
+            }
+
             Simage = await GetDalleGood(makingImage
                        + iimage);
             if (Simage.Contains("Bad Request")) // Probably from words and length
@@ -1558,8 +1586,6 @@ class Program
                 }
                 #endregion
 
-                string _examples = args[1];
-               
                 #region Init Some vars
                 int liness = 0;
                 string getResponse = "";
@@ -1578,21 +1604,21 @@ class Program
                     #region Create Image in the lines
                     // Prep quote
                     // 
-                    if(_examples.Contains("yes"))
+                    if(_examples.Contains("doclearn"))
                     {
                         iimage = GlobalMethods.GetSubStringForImages(line,
-                            "Write scientifically as a researcher on the Agile Coach within complex organizational Agile transitions on the title – ");
+                            "Write an exciting long elaborated detailed book chapter about Microsoft AI 900 exam prep on the title – ");
                     }
                     if (_examples.Contains("doclonghtml"))
                     {
                         iimage = GlobalMethods.GetSubStringForImages(line,
-                            "Write an exciting long elaborated detailed book chapter for a thriller in the style of John Grisham on the title – ");
+                            "Write an exciting long elaborated detailed book chapter about Microsoft AI 900 exam prep on the title – ");
                     }
                     if(_examples.Contains("dochtml"))
                     {
                        
                         iimage = GlobalMethods.GetSubStringForImages(line,
-                           "Write in the style of Isaac Asimov Arthur C Clarke and Neil Stephenson. Write an extensive large book chapter with rich intelligent dialogs and characters on the title – ");
+                           "Write an extensive and detailed book chapter in the style of Isaac Asimovs The Caves of Steel and The Robots of Dawn. The chapter must be large and immersive, featuring richly developed characters with nuanced psychological depth. Include intelligent, thought-provoking dialogue that explores complex social, ethical, or technological themes. The interactions between characters should be subtle, sharp, and layered with tension or unspoken motives, leading to unforeseen twists and turns in the narrative. Incorporate vivid and atmospheric descriptions of futuristic urban or planetary settings—sprawling Cities, Spacer environments, or high-tech interiors—grounded in Asimovs clean, minimalistic prose. Ensure that the tone reflects the sociological, investigative, and philosophical essence of Asimovs Robot Series. Write this chapter on the title – ");
                     }
                     sClean =
                             iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
@@ -1603,7 +1629,18 @@ class Program
 
                     // Do image
                     //
-                    makingImage = "Create an Agile Coach oriented image ";
+                    if (_examples.Contains("dochtml"))
+                    {
+                        makingImage = "Create an Isaac Asimoc Caves of Steel geometry mathematical oriented SF image on the title - ";
+                    }
+                    if (_examples.Contains("doclonghtml"))
+                    {
+                        makingImage = "Create an artificial intelligence image on the topic - ";
+                    }
+                    if (_examples.Contains("doclearn"))
+                    {
+                        makingImage = "Create a mathematical Artificial Intelligence oriented image on the topic - ";
+                    }
                     Simage = await GetDalleGood(makingImage
                                + sQuote);
                     if (Simage.Contains("Bad Request")) // Probably from words and length
@@ -1633,7 +1670,7 @@ class Program
                     #region Append Titles in the lines
                     // Write title of chapter
                     // 
-                    if (_examples.Contains("yes"))
+                    if (_examples.Contains("doclearn"))
                     {
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
                         HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
@@ -1650,18 +1687,18 @@ class Program
                     }
                     else
                     {
-                        GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(outputFilePath, iimage, "Heading 1", "Times New Roman");
+                        GlobalMethods.AppendHeaderToWordExtendedWithPageBreak(outputFilePath, iimage, "Heading 1", "Arial");
                     }
                     #endregion
 
                     #region Write image and quote in lines
                     // Write image and quote
                     // 
-                    if (_examples.Contains("yes")) // When we do a knowledge book
+                    if (_examples.Contains("doclearn")) // When we do a knowledge book
                     {
                         imagePath = appPath + sClean + ".jpg";
                         HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
                     }
@@ -1669,7 +1706,7 @@ class Program
                     {
                         imagePath = appPath + sClean + ".jpg";
                         HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
                     }
@@ -1677,7 +1714,7 @@ class Program
                     {
                         imagePath = appPath + sClean + ".jpg";
                         HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
                     }
@@ -1704,7 +1741,10 @@ class Program
                             sForPlot.Add(lines[i + 1].ToString());
                             sForPlot.Add(lines[i + 2].ToString());
                             sForPlot.Add(lines[i + 3].ToString());
-                            i += 3;
+                            sForPlot.Add(lines[i + 4].ToString());
+                            sForPlot.Add(lines[i + 5].ToString());
+                            sForPlot.Add(lines[i + 6].ToString());
+                            i += 6;
                             int iLine = 1;
                             string sPlotters = "";
                             foreach (string sLine in sForPlot)
@@ -1714,10 +1754,7 @@ class Program
                                     sFore += "  and write on this plotline " +
                                     sLine +
                                     " and build further on " + sPrevious +
-                                    "Continue expanding James' world—with Clare, Memfy, and Mary at its emotional and ethical center—while introducing new characters only when they add complexity to the legal stakes, deepen personal tensions, or shift the moral compass of the narrative." +
-                                    "Render characters with rich, believable detail—highlighting their vulnerabilities, convictions, and evolving loyalties." +
-                                    "Ground each scene in everyday realism, whether it's a sunlit church gathering or a tense private conversation—settings should echo the emotional charge of each moment." +
-                                    "Construct dialogues that reveal more than words: let each exchange unveil hidden motives, test personal values, and intensify the psychological drama at the core of James' unfolding decisions.";
+                                    "Write an extensive elaborate long professional chapter on AI 900 and use html lists and tables to create a readable format. Us inline examples.";
                                     sPrevious = sPlotters;
                                 }
                                 else
@@ -1725,23 +1762,27 @@ class Program
                                     sFore += "  and write on this plotline " +
                                     sLine + bookPlot +
                                     " and build further on " + sPlotters +
-                                    "Use characters from James' world—Clare, Memfy, Mary, and James himself—placing them at the emotional and ethical heart of the story. Introduce new characters only when they deepen the legal tension, complicate relational dynamics, or challenge the moral equilibrium that holds their world together." +
-                                    "Portray each character with depth and humanity, revealing their vulnerabilities, convictions, and shifting loyalties in the face of personal and ethical dilemmas." +
-                                    "Immerse each scene in tangible, everyday settings—whether a quiet church pew, a warm family kitchen, or a tense legal consultation—ensuring that the environment mirrors the emotional temperature of the moment." +
-                                    "Craft layered, emotionally intelligent dialogue that feels real and resonant—conversations should expose what characters can’t admit aloud, test their values, and heighten the psychological suspense at the center of James' increasingly complex choices.";
+                                    " Write an extensive elaborate long professional chapter on AI 900 and use html lists and tables to create a readable format. Use inline examples.";
 
 
 
                                 }
                                 string front = "Make sure the text is put in an easy to read overview. Like this:"
+                                + "<h3>Introduction</h3><font face=\"Arial\" size=\"3\">content</font>"
+                                + "<h3>paragraph title</h3><font face=\"Arial\" size=\"3\">content</font>"
+                                + "<h3>Example</h3><font face=\"Arial\" size=\"3\">content</font>"
+                                + "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
+                                + "<h3>Conclusion</h3><font face=\"Arial\" size=\"3\">content</font>"
+                                 + " and use HTML TABLES and HTML LISTS when needed to even add more structure to the content."
+                                + "Keep the font the same size and as the body font."
                                 + "<p>paragraph</p>"
                                 + " but do not mention the chapter number and title at the start of the chapter.";
 
-                                getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                                getResponse = await LargeGPT.CallLargeChatGPT(sFore + front, "o1") + "\n\n";
                                 getResponse.Replace(sForOrg + sLine, "");
                                 sPlotters += getResponse;
                                 sFore = sForOrg;
-                                
+
                                 if (iLine == 1)
                                 {
                                     // Writing text and quote
@@ -1749,8 +1790,12 @@ class Program
                                     sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
                                 }
-                                HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, sLine, false, "Times New Roman", 20);
-                                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);
+                                else
+                                {
+                                    HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
+                                }
+                                HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, sLine, false, "Arial", 20);
+                                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
                                 iLine += 1;
                             }
                             sPrevious = sPlotters;
@@ -1762,40 +1807,52 @@ class Program
                     {
                         if (liness >= 1)
                         {
-                            sFore += " and Continue the story based on the previous chapter " +
-                            getResponse +
-                            " and make it a natural continuation"
-                            + " and make it a thought provoking chapter with intelligent literature design and twists." +
-                            " Use characters from the Perry Rhodan Universe and introduce new ones when it makes the storyline stronger and more interesting." +
-                                    " Use detailed character description, detailed scenery description, detailed emotion telling and" +
-                                    " elaborate interactive dialoques between characters in an intelligent, catchy and thought provoking manner."; ;
+                            sFore += " and continue the story naturally from the previous chapter: " +
+                                getResponse +
+                                ". Make it a thought-provoking continuation, rich in narrative complexity and emotional subtlety. " +
+                                "Ensure the dialogue between characters is sharp, intelligent, and layered with hidden motives and psychological nuance. " +
+                                "Reveal character intentions gradually through voice, pacing, and body language—tension should simmer beneath the surface. " +
+                                "Include unexpected twists grounded in personal or sociopolitical dilemmas that echo the themes of identity, fear, and societal control. " +
+                                "Describe characters’ physical presence, posture, and movement in a way that enhances emotional impact. " +
+                                "Build the scenes vividly in the futuristic, urbanized, stratified world of *The Caves of Steel*, incorporating enclosed cityscapes, artificial lighting, and mechanized routines. " +
+                                "Use clean, elegant prose inspired by Asimov’s style to maintain authenticity while deepening complexity.";
                         }
                         else
                         {
-                            sFore += " and base this first chapter around the plot - "
-                                + bookPlot
-                                + " and make it a thought provoking chapter with intelligent literature design and twists." +
-                                " Use characters from the Perry Rhodan Universe and introduce new ones when it makes the storyline stronger and more interesting." +
-                                    " Use detailed character description, detailed scenery description, detailed emotion telling and" +
-                                    " elaborate interactive dialoques between characters in an intelligent, catchy and thought provoking manner."; ;
+                            sFore += " and base this first chapter around the plot: " +
+                                bookPlot +
+                                ". Begin with an immersive, psychological narrative set in the universe of *The Caves of Steel*. " +
+                                "Craft a strong, intelligent opening with dialogue that reveals more than it says—characters should carry secrets, prejudices, fears, and hopes. " +
+                                "Explore the underlying tensions between humans and robots, urban claustrophobia, and class divisions. " +
+                                "Describe each setting—corridors, dwellings, transportation systems, and surveillance mechanisms—with crisp, atmospheric clarity. " +
+                                "Characters should be introduced with detailed attention to facial expression, body posture, and emotional restraint or conflict. " +
+                                "Allow for surprises in character behavior that hint at deeper philosophical or ethical debates consistent with Asimov’s world. " +
+                                "Use minimalistic yet evocative language to create the distinctive tone of an Earth bound by steel and suspicion.";
                         }
+                        sFore += " Ensure the chapter balances narrative momentum with deep philosophical undercurrents, evoking questions of humanity, logic, and moral ambiguity.";
+
+
                     }
-                    else if (_examples.Contains("yes")) // Educational book
+                    else if (_examples.Contains("doclearn")) // Educational book
                     {
                         if (liness >= 1)
                         {
-                            sFore += " and Continue the story based on the previous chapter " +
+                            sFore += " and Continue the educational learning chapter about Mirosoft AI-900 Exam Prep based on the previous chapter " +
                             getResponse +
                             " and make it a natural continuation"
-                            + " and make it a thought provoking educational chapter with intelligent descriptions." +
-                            "Use examples from other literature reviews and examples from real life in organizations.";
+                            + " and make it a thought provoking educational intelligent chapter about Microsoft AI-900 Exam Prep with" +
+                            " many inline examples and formulas." +
+                            "Use examples from other literature reviews and examples from real life in organizations." +
+                            " Write as a Microsoft AI-900 expert teacher and base all content on the content found in the AI-900 Exam Prep.";
                         }
                         else
                         {
-                            sFore += " and base this first chapter around the plot - "
+                            sFore += " and base this first educational elaborate extensive very long learning chapter about Microsoft AI-900 around the plot - "
                                 + bookPlot
-                                + " and make it a thought provoking educational chapter with intelligent descriptions." +
-                                "Use examples from other literature reviews and examples from real life in organizations.";
+                                + " and make it a thought provoking educational intelligent elaborate extensive very long chapter about Microsoft AI-900 Exam Prep with" +
+                                " many inline examples." +
+                                "Use examples from other literature reviews and examples from real life in organizations." +
+                                " Write as a Microsoft AI-900 expert teacher and base all content on the content found in the AI-900 Exam Prep.";
                         }
                     }
                     else
@@ -1805,53 +1862,7 @@ class Program
                     #endregion
 
                     #region Write the chapter content in the lines
-                    if (_examples.Contains("xx"))
-                    {
-                        string front = "Give an alaborate long chapter. Make sure the text is put in an easy to read overview. ";
-                            //+ "Like this:"
-                            //+ "<h3>Introduction</h3><font face=\"Arial\" size=\"5\">content</font>"
-                            //+ "<h3>paragraph title</h3><font face=\"Arial\" size=\"5\">content</font>"
-                            //+ "<h3>Example</h3><font face=\"Arial\" size=\"5\">content</font>"
-                            //+ "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
-                            //+ "<h3>Conclusion</h3><font face=\"Arial\" size=\"5\">content</font>"
-                            //+ " and user html tables and lists when needed to even add more structure to the content." +
-                            //"Keep the font the same size and as the body font.";
-
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
-                        getResponse.Replace(line, "");
-
-                        // Writing text and quote
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
-                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
-
-                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "The Theory", false, "Arial", 20);
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
-
-                        string sForeExample = getResponse;
-                        front = "Give extensive examples with elaborative long text based on the previous part." +
-                            "Keep app font the same size." +
-                            "Make sure the text is put in an easy to read overview. Like this:"
-                            + "<h3>Introduction</h3><font face=\"Arial\" size=\"4\">content</font>"
-                            + "<h3>paragraph title</h3><font face=\"Arial\" size=\"4\">content</font>"
-                            + "<h3>Example</h3><font face=\"Arial\" size=\"4\">content</font>"
-                            + "<h3>Tips</h3><font face=\"Arial\" size=\"4\">content</font>"
-                            + "<h3>Conclusion</h3><font face=\"Arial\" size=\"4\">content</font>"
-                            + " and put all other text in <font face=\"Arial\" size=\"4\">content</font>"
-                            + " and user html tables and lists when needed to even add more structure to the content." +
-                            "Keep the font the same as the body font.";
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1") + "\n\n";
-                        
-                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
-                        HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "Examples", false, "Arial", 20);
-
-                        // Writing text and quote
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
-                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
-                    }
-                    else if (_examples.Contains("yes"))
+                    if (_examples.Contains("doclearn"))
                     {
                         string front = "Make sure the text is put in an easy to read overview."
                             + "Like this:"
@@ -1860,7 +1871,7 @@ class Program
                             + "<h3>Example</h3><font face=\"Arial\" size=\"3\">content</font>"
                             + "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
                             + "<h3>Conclusion</h3><font face=\"Arial\" size=\"3\">content</font>"
-                            + " and user html tables and lists when needed to even add more structure to the content."
+                            + " and use html tables and lists when needed to even add more structure to the content."
                             + "Keep the font the same size and as the body font."
                             + "<p>paragraph</p>"
                             + " but do not mention the chapter number and title at the start of the chapter.";
@@ -1877,7 +1888,7 @@ class Program
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
 
                         HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "The Theory", false, "Arial", 20);
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
 
                         string sForeExample = getResponse;
                         front = "Give extensive examples with elaborative long text based on the previous part."
@@ -1887,10 +1898,12 @@ class Program
                             + "<h3>Example</h3><font face=\"Arial\" size=\"3\">content</font>"
                             + "<h3>Tips</h3><font face=\"Arial\" size=\"3\">content</font>"
                             + "<h3>Conclusion</h3><font face=\"Arial\" size=\"3\">content</font>"
-                            + " and user html tables and lists when needed to even add more structure to the content."
+                            + " and use html tables and lists when needed to even add more structure to the content."
                             + "Keep the font the same size and as the body font."
                             + "<p>paragraph</p>"
-                            + " but do not mention the chapter number and title at the start of the chapter.";
+                            + " but do not mention the chapter number and title at the start of the chapter."
+                            + " Build further with elaborate detailed examples on this part:" + sForeExample;
+
                         getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1") + "\n\n";
 
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
@@ -1921,19 +1934,11 @@ class Program
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
 
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Times New Roman", 14);                  
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);                  
                     }
-                    else if(_examples.Contains("somethingelse"))
+                    else
                     {
-                        getResponse = await LargeGPT.CallLargeChatGPT(sFore, "o1") + "\n\n";
-                        getResponse.Replace(line, "");
-
-                        // Writing text and quote
-                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
-                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                        GlobalMethods.InsertQuotedText(outputFilePath, sQuote, false, false, "White", false, "Black", "Garamond", 22); // Quote without Page Break
-
-                        GlobalMethods.AppendTextToWordDocumentCorrectFormatSplit(outputFilePath, getResponse, "Times New Roman", 12);
+                        // To be implemented.
                     }
                     #endregion
 
@@ -1943,7 +1948,7 @@ class Program
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, appPath);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN_The Infinity Paradox.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Steel and Stars - The Aurora Paradox.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
                 //HtmlGenerator.AppendClosingHtmlTags("output.html");
             }
@@ -1953,7 +1958,24 @@ class Program
             }
            
         }
-        else if(args[0] != null && args[0].Contains("pdfRender"))
+        else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string chapterTitlesPathPdf = "AI - Microsoft AI-900 Exam Prep - AN AI Perspective" + ".pdf";
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            Console.WriteLine("Starting PDF logic.");
+            try
+            {
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "AI - Microsoft AI-900 Exam Prep - AN AI Perspective.pdf", "mindscripted");
+                Console.WriteLine("PDF upload to Blob:" + result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+        else if(args[0] != null && args[0].Contains("ConvertHtmlToPdfAndUpload"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             // Create the Word document
