@@ -34,6 +34,8 @@
             txtMainHtmlImageTop = new TextBox();
             txtTitleBook = new TextBox();
             txtFirstPageInitiation = new TextBox();
+            btnSave = new Button();
+            btnLoad = new Button();
             SuspendLayout();
             // 
             // lblImageHtmlTop
@@ -86,10 +88,32 @@
             txtFirstPageInitiation.Size = new Size(497, 133);
             txtFirstPageInitiation.TabIndex = 5;
             // 
+            // btnSave
+            // 
+            btnSave.Location = new Point(638, 307);
+            btnSave.Name = "btnSave";
+            btnSave.Size = new Size(94, 29);
+            btnSave.TabIndex = 6;
+            btnSave.Text = "Save";
+            btnSave.UseVisualStyleBackColor = true;
+            btnSave.Click += btnSave_Click;
+            // 
+            // btnLoad
+            // 
+            btnLoad.Location = new Point(527, 307);
+            btnLoad.Name = "btnLoad";
+            btnLoad.Size = new Size(94, 29);
+            btnLoad.TabIndex = 7;
+            btnLoad.Text = "Load";
+            btnLoad.UseVisualStyleBackColor = true;
+            btnLoad.Click += btnLoad_Click;
+            // 
             // GenericControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(btnLoad);
+            Controls.Add(btnSave);
             Controls.Add(txtFirstPageInitiation);
             Controls.Add(txtTitleBook);
             Controls.Add(txtMainHtmlImageTop);
@@ -111,5 +135,7 @@
         private TextBox txtMainHtmlImageTop;
         private TextBox txtTitleBook;
         private TextBox txtFirstPageInitiation;
+        private Button btnSave;
+        private Button btnLoad;
     }
 }
