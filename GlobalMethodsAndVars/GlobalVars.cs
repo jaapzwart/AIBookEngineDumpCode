@@ -1,11 +1,17 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
+using System.Text;
+using Newtonsoft.Json;
+using System.Runtime.CompilerServices;
 
-namespace GlobalMethodsAndVars
+
+namespace PromptConfig
 {
     public static class GlobalVars
     {
+        
         public static string MainHtmlImageAtTop { get; set; } = "Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image";
         public static string TitleOfBook { get; set; } = "Asimov In Space";
         public static string FirstPageInitiation { get; set; } =
@@ -50,4 +56,83 @@ namespace GlobalMethodsAndVars
                                 "Continue the story seamlessly from the previous chapter: ";
         public static string extraTouch { get; set; } = "Ensure the chapter balances narrative momentum with deep philosophical undercurrents, evoking questions of humanity, logic, and moral ambiguity.";
     }
+    public static class LargeGPTPrompt
+    {
+        private static readonly string apiKey = Secrets._o1;
+        private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
+
+        public static async Task<string> CallLargeChatGPT(string prompt, string modell)
+        {
+            var response = await CallOpenAIAsync(prompt, modell);
+            Console.WriteLine(response);
+            return response;
+        }
+
+        static async Task<string> CallOpenAIAsync(string prompt, string modell)
+        {
+            int maxRetries = 10;
+            int retryCount = 0;
+            TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
+
+            while (retryCount < maxRetries)
+            {
+                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
+                {
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                    var requestBody = new
+                    {
+                        model = modell, // Change to "o1" if needed
+                        messages = new[]
+                        {
+                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "user", content = prompt }
+                },
+                        max_completion_tokens = 100000
+                    };
+
+                    string jsonContent = JsonConvert.SerializeObject(requestBody);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    try
+                    {
+                        HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                        response.EnsureSuccessStatusCode(); // Throw exception if not successful
+
+                        string responseString = await response.Content.ReadAsStringAsync();
+                        using JsonDocument doc = JsonDocument.Parse(responseString);
+
+                        return doc.RootElement
+                            .GetProperty("choices")[0]
+                            .GetProperty("message")
+                            .GetProperty("content")
+                            .GetString();
+                    }
+                    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                    {
+                        // Handle timeout
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("Request timed out after multiple retries.", ex);
+
+                        await Task.Delay(delay);
+                        delay *= 2; // Exponential backoff
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        // Handle other request errors (like network issues)
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("HTTP request failed after multiple retries.", ex);
+
+                        await Task.Delay(delay);
+                        delay *= 4;
+                    }
+                }
+            }
+
+            throw new Exception("Unexpected error: Maximum retries exceeded.");
+        }
+    }
 }
+

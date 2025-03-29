@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using GlobalMethodsAndVars;
 
 namespace PromptConfig
 {
@@ -16,9 +15,9 @@ namespace PromptConfig
         public GenericControl()
         {
             InitializeComponent();
-            txtTitleBook.Text = GlobalMethodsAndVars.GlobalVars.TitleOfBook;
-            txtMainHtmlImageTop.Text = GlobalMethodsAndVars.GlobalVars.MainHtmlImageAtTop;
-            txtFirstPageInitiation.Text = GlobalMethodsAndVars.GlobalVars.FirstPageInitiation;
+            txtTitleBook.Text = GlobalVars.TitleOfBook;
+            txtMainHtmlImageTop.Text = GlobalVars.MainHtmlImageAtTop;
+            txtFirstPageInitiation.Text = GlobalVars.FirstPageInitiation;
         }
        
         private void GenericControl_Load(object sender, EventArgs e)
@@ -34,9 +33,9 @@ namespace PromptConfig
                 txtTitleBook.Text,
                 txtFirstPageInitiation.Text.Replace(Environment.NewLine, "\\n") // Preserve line breaks
             };
-            GlobalMethodsAndVars.GlobalVars.MainHtmlImageAtTop = lines[0];
-            GlobalMethodsAndVars.GlobalVars.TitleOfBook = lines[1];
-            GlobalMethodsAndVars.GlobalVars.FirstPageInitiation = lines[2];
+            GlobalVars.MainHtmlImageAtTop = lines[0];
+            GlobalVars.TitleOfBook = lines[1];
+            GlobalVars.FirstPageInitiation = lines[2];
 
             File.WriteAllLines(dataFile, lines);
             MessageBox.Show("Data saved successfully.");

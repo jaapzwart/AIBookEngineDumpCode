@@ -41,6 +41,18 @@
             btnSaveAsDocHtml = new Button();
             txtExtraTouch = new TextBox();
             label2 = new Label();
+            cmbTypeOfBook = new ComboBox();
+            lblTypeOfBook = new Label();
+            btnCheckPrompts = new Button();
+            txtBookGoals = new TextBox();
+            lblBookGoals = new Label();
+            picForePromptStatus = new PictureBox();
+            picSecondPromptStatus = new PictureBox();
+            picTitlePrefixPromptStatus = new PictureBox();
+            lblStatus = new Label();
+            ((System.ComponentModel.ISupportInitialize)picForePromptStatus).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picSecondPromptStatus).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)picTitlePrefixPromptStatus).BeginInit();
             SuspendLayout();
             // 
             // btnLoadDocHtml
@@ -69,7 +81,7 @@
             txtFirstForePrompt.Multiline = true;
             txtFirstForePrompt.Name = "txtFirstForePrompt";
             txtFirstForePrompt.ScrollBars = ScrollBars.Vertical;
-            txtFirstForePrompt.Size = new Size(985, 151);
+            txtFirstForePrompt.Size = new Size(996, 151);
             txtFirstForePrompt.TabIndex = 13;
             // 
             // txtImagePrefix
@@ -77,7 +89,7 @@
             txtImagePrefix.Location = new Point(206, 146);
             txtImagePrefix.Multiline = true;
             txtImagePrefix.Name = "txtImagePrefix";
-            txtImagePrefix.Size = new Size(983, 34);
+            txtImagePrefix.Size = new Size(996, 34);
             txtImagePrefix.TabIndex = 12;
             // 
             // txtTitlePrefix
@@ -86,7 +98,7 @@
             txtTitlePrefix.Multiline = true;
             txtTitlePrefix.Name = "txtTitlePrefix";
             txtTitlePrefix.ScrollBars = ScrollBars.Vertical;
-            txtTitlePrefix.Size = new Size(983, 129);
+            txtTitlePrefix.Size = new Size(996, 129);
             txtTitlePrefix.TabIndex = 11;
             // 
             // lblFirstPageInit
@@ -122,7 +134,7 @@
             txtSecondRunningPrompt.Multiline = true;
             txtSecondRunningPrompt.Name = "txtSecondRunningPrompt";
             txtSecondRunningPrompt.ScrollBars = ScrollBars.Vertical;
-            txtSecondRunningPrompt.Size = new Size(983, 288);
+            txtSecondRunningPrompt.Size = new Size(994, 288);
             txtSecondRunningPrompt.TabIndex = 17;
             // 
             // label1
@@ -148,7 +160,7 @@
             txtExtraTouch.Location = new Point(206, 637);
             txtExtraTouch.Multiline = true;
             txtExtraTouch.Name = "txtExtraTouch";
-            txtExtraTouch.Size = new Size(985, 75);
+            txtExtraTouch.Size = new Size(996, 75);
             txtExtraTouch.TabIndex = 20;
             // 
             // label2
@@ -160,10 +172,99 @@
             label2.TabIndex = 19;
             label2.Text = "The Extra Touch:";
             // 
+            // cmbTypeOfBook
+            // 
+            cmbTypeOfBook.FormattingEnabled = true;
+            cmbTypeOfBook.Items.AddRange(new object[] { "Science Fiction", "Horror", "Thriller", "Detective", "Urban", "Fantasy", "Techno Sci Fi" });
+            cmbTypeOfBook.Location = new Point(206, 729);
+            cmbTypeOfBook.Name = "cmbTypeOfBook";
+            cmbTypeOfBook.Size = new Size(272, 28);
+            cmbTypeOfBook.TabIndex = 21;
+            cmbTypeOfBook.Text = "Science Fiction";
+            // 
+            // lblTypeOfBook
+            // 
+            lblTypeOfBook.AutoSize = true;
+            lblTypeOfBook.Location = new Point(27, 732);
+            lblTypeOfBook.Name = "lblTypeOfBook";
+            lblTypeOfBook.Size = new Size(99, 20);
+            lblTypeOfBook.TabIndex = 22;
+            lblTypeOfBook.Text = "Type of book:";
+            // 
+            // btnCheckPrompts
+            // 
+            btnCheckPrompts.Location = new Point(496, 728);
+            btnCheckPrompts.Name = "btnCheckPrompts";
+            btnCheckPrompts.Size = new Size(315, 29);
+            btnCheckPrompts.TabIndex = 23;
+            btnCheckPrompts.Text = "Check Prompts against your goals";
+            btnCheckPrompts.UseVisualStyleBackColor = true;
+            btnCheckPrompts.Click += btnCheckPrompts_Click;
+            // 
+            // txtBookGoals
+            // 
+            txtBookGoals.Location = new Point(17, 820);
+            txtBookGoals.Multiline = true;
+            txtBookGoals.Name = "txtBookGoals";
+            txtBookGoals.ScrollBars = ScrollBars.Vertical;
+            txtBookGoals.Size = new Size(1185, 123);
+            txtBookGoals.TabIndex = 24;
+            // 
+            // lblBookGoals
+            // 
+            lblBookGoals.AutoSize = true;
+            lblBookGoals.Location = new Point(18, 797);
+            lblBookGoals.Name = "lblBookGoals";
+            lblBookGoals.Size = new Size(86, 20);
+            lblBookGoals.TabIndex = 25;
+            lblBookGoals.Text = "Book goals:";
+            // 
+            // picForePromptStatus
+            // 
+            picForePromptStatus.Location = new Point(163, 301);
+            picForePromptStatus.Name = "picForePromptStatus";
+            picForePromptStatus.Size = new Size(37, 36);
+            picForePromptStatus.TabIndex = 26;
+            picForePromptStatus.TabStop = false;
+            // 
+            // picSecondPromptStatus
+            // 
+            picSecondPromptStatus.Location = new Point(163, 595);
+            picSecondPromptStatus.Name = "picSecondPromptStatus";
+            picSecondPromptStatus.Size = new Size(37, 36);
+            picSecondPromptStatus.TabIndex = 27;
+            picSecondPromptStatus.TabStop = false;
+            // 
+            // picTitlePrefixPromptStatus
+            // 
+            picTitlePrefixPromptStatus.Location = new Point(163, 104);
+            picTitlePrefixPromptStatus.Name = "picTitlePrefixPromptStatus";
+            picTitlePrefixPromptStatus.Size = new Size(37, 36);
+            picTitlePrefixPromptStatus.TabIndex = 28;
+            picTitlePrefixPromptStatus.TabStop = false;
+            // 
+            // lblStatus
+            // 
+            lblStatus.AutoSize = true;
+            lblStatus.Location = new Point(873, 946);
+            lblStatus.Name = "lblStatus";
+            lblStatus.Size = new Size(18, 20);
+            lblStatus.TabIndex = 29;
+            lblStatus.Text = "...";
+            // 
             // DocHtmlControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(lblStatus);
+            Controls.Add(picTitlePrefixPromptStatus);
+            Controls.Add(picSecondPromptStatus);
+            Controls.Add(picForePromptStatus);
+            Controls.Add(lblBookGoals);
+            Controls.Add(txtBookGoals);
+            Controls.Add(btnCheckPrompts);
+            Controls.Add(lblTypeOfBook);
+            Controls.Add(cmbTypeOfBook);
             Controls.Add(txtExtraTouch);
             Controls.Add(label2);
             Controls.Add(btnSaveAsDocHtml);
@@ -178,7 +279,10 @@
             Controls.Add(lblFirstImagePrefix);
             Controls.Add(lblTitlePrefix);
             Name = "DocHtmlControl";
-            Size = new Size(1221, 888);
+            Size = new Size(1221, 972);
+            ((System.ComponentModel.ISupportInitialize)picForePromptStatus).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picSecondPromptStatus).EndInit();
+            ((System.ComponentModel.ISupportInitialize)picTitlePrefixPromptStatus).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -198,5 +302,14 @@
         private Button btnSaveAsDocHtml;
         private TextBox txtExtraTouch;
         private Label label2;
+        private ComboBox cmbTypeOfBook;
+        private Label lblTypeOfBook;
+        private Button btnCheckPrompts;
+        private TextBox txtBookGoals;
+        private Label lblBookGoals;
+        private PictureBox picForePromptStatus;
+        private PictureBox picSecondPromptStatus;
+        private PictureBox picTitlePrefixPromptStatus;
+        private Label lblStatus;
     }
 }

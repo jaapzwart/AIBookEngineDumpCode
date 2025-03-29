@@ -34,7 +34,7 @@ using DinkToPdf.Contracts;
 using Aspose.Pdf;
 using PdfSharp.Pdf;
 using HtmlRendererCore.PdfSharp;
-using GlobalMethodsAndVars;
+using PromptConfig;
 
 using DocumentFormat.OpenXml.Drawing;
 using A = DocumentFormat.OpenXml.Drawing;
@@ -4190,8 +4190,9 @@ public static class HtmlGenerator
                 return filename;
             }
 
-            string imagePath = GlobalMethodsAndVars.GlobalVars.MainHtmlImageAtTop; // Without .jpg
-            string firstPageInit = GlobalMethodsAndVars.GlobalVars.FirstPageInitiation; ;
+            string imagePath = GetPromptVars.MainHtmlImageTop; // Without .jpg
+            string firstPageInit = GetPromptVars.FirstPageInitiation;
+            string bookTitle = GetPromptVars.TitleBook;
 
             string emptyHtmlContent = $@"
             <!DOCTYPE html>
@@ -4199,7 +4200,7 @@ public static class HtmlGenerator
             <head>
                 <meta charset=""UTF-8"">
                 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-                <title>Image in HTML - A4 Format</title>
+                <title>{bookTitle}</title>
                 <style>
                     p, table, ul, li {{
                         font-family: 'Arial', sans-serif;
@@ -4273,7 +4274,7 @@ public static class HtmlGenerator
             <body>
             <center>
                 <h1>Caves of Steel Universe</h1> 
-                <h2>The Aurora Paradox</h2>
+                <h2>{bookTitle}</h2>
                 <div class=""image-container"">
                     <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">
                 </div>
@@ -4461,6 +4462,45 @@ public static class HtmlGenerator
             Console.WriteLine("Dink PDF with images created.");
         }
     }
+    public static class GetPromptVars
+    {
+        private static string dataFileGenericPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cbookdata.txt";
+        public static string MainHtmlImageTop { get; set; } = "";
+        public static string TitleBook { get; set; } = "";
+        public static string FirstPageInitiation { get; set; } = "";
+        public static void LoadDataGenericPromptVars()
+        {
+            if (!File.Exists(dataFileGenericPrompts)) return;
 
+            string[] lines = File.ReadAllLines(dataFileGenericPrompts);
+            if (lines.Length >= 3)
+            {
+                MainHtmlImageTop = lines[0];
+                TitleBook = lines[1];
+                FirstPageInitiation = lines[2].Replace("\\n", Environment.NewLine);
+            }
+        }
+        private static string dataFileDocHtmlPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cdochtml.txt";
+        public static string TitlePrefix { get; set; } = "";
+        public static string ImagePrefix { get; set; } = "";
+        public static string FirstForePrompt { get; set; } = "";
+        public static string SecondRunningPrompt { get; set; } = "";
+        public static string ExtraTouch { get; set; } = "";
+        public static void LoadDataDocHtmlPromptVars()
+        {
+
+            if (!File.Exists(dataFileDocHtmlPrompts)) return;
+
+            string[] lines = File.ReadAllLines(dataFileDocHtmlPrompts);
+            if (lines.Length >= 5)
+            {
+                TitlePrefix = lines[0];
+                ImagePrefix = lines[1];
+                FirstForePrompt = lines[2];
+                SecondRunningPrompt = lines[3];
+                ExtraTouch = lines[4];
+            }
+        }
+    }
 }
 
