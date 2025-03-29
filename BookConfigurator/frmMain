@@ -1,0 +1,91 @@
+using System;
+using System.Windows.Forms;
+
+namespace BookConfigurator
+{
+    public partial class frmMain : Form
+    {
+        private Panel contentPanel;
+
+        public frmMain()
+        {
+            InitializeComponent();
+            SetupUI();
+        }
+
+        private void SetupUI()
+        {
+            // Create SplitContainer for layout
+            var splitContainer = new SplitContainer
+            {
+                Dock = DockStyle.Fill,
+                Orientation = Orientation.Vertical,
+                SplitterDistance = 200
+            };
+
+            // Create TreeView for navigation
+            var treeMenu = new TreeView { Dock = DockStyle.Fill };
+            treeMenu.Nodes.Add("User Info");
+            treeMenu.Nodes.Add("Settings");
+            treeMenu.Nodes.Add("About");
+            treeMenu.AfterSelect += TreeMenu_AfterSelect;
+
+            // Create right panel for content
+            contentPanel = new Panel { Dock = DockStyle.Fill };
+
+            // Add controls to the split container
+            splitContainer.Panel1.Controls.Add(treeMenu);
+            splitContainer.Panel2.Controls.Add(contentPanel);
+
+            // Add split container to the form
+            this.Controls.Add(splitContainer);
+        }
+
+        private void TreeMenu_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            contentPanel.Controls.Clear();
+
+            switch (e.Node.Text)
+            {
+                case "User Info":
+                    LoadUserInfo();
+                    break;
+                case "Settings":
+                    LoadSettings();
+                    break;
+                case "About":
+                    LoadAbout();
+                    break;
+            }
+        }
+
+        private void LoadUserInfo()
+        {
+            var lblName = new Label { Text = "Name:", Top = 20, Left = 20 };
+            var txtName = new TextBox { Top = 20, Left = 80, Width = 200 };
+
+            var lblEmail = new Label { Text = "Email:", Top = 60, Left = 20 };
+            var txtEmail = new TextBox { Top = 60, Left = 80, Width = 200 };
+
+            contentPanel.Controls.AddRange(new Control[] { lblName, txtName, lblEmail, txtEmail });
+        }
+
+        private void LoadSettings()
+        {
+            var chkDarkMode = new CheckBox { Text = "Enable Dark Mode", Top = 20, Left = 20 };
+            contentPanel.Controls.Add(chkDarkMode);
+        }
+
+        private void LoadAbout()
+        {
+            var lbl = new Label
+            {
+                Text = "Book Configurator v1.0\nBuilt with C# WinForms.",
+                AutoSize = true,
+                Top = 20,
+                Left = 20
+            };
+            contentPanel.Controls.Add(lbl);
+        }
+    }
+}

@@ -44,4 +44,7 @@
     <PackageReference Include="System.Text.Encoding" Version="4.3.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GlobalMethodsAndVars\GlobalMethodsAndVars.csproj" />
+  </ItemGroup>
 </Project>

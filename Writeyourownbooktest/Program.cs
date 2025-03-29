@@ -1454,7 +1454,7 @@ class Program
         else if (args[0] != null && args[0].Contains("talkBookConvertHtmlToPdf"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string filename = "book_20250323223005401";
+            string filename = "talkfilebook_20250328184852713";
             string chapterTitlesPathHtml = filename + ".html";
             string chapterTitlesPathPdf = filename + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
@@ -1807,28 +1807,41 @@ class Program
                     {
                         if (liness >= 1)
                         {
-                            sFore += " and continue the story naturally from the previous chapter: " +
-                                getResponse +
-                                ". Make it a thought-provoking continuation, rich in narrative complexity and emotional subtlety. " +
-                                "Ensure the dialogue between characters is sharp, intelligent, and layered with hidden motives and psychological nuance. " +
-                                "Reveal character intentions gradually through voice, pacing, and body language—tension should simmer beneath the surface. " +
-                                "Include unexpected twists grounded in personal or sociopolitical dilemmas that echo the themes of identity, fear, and societal control. " +
-                                "Describe characters’ physical presence, posture, and movement in a way that enhances emotional impact. " +
-                                "Build the scenes vividly in the futuristic, urbanized, stratified world of *The Caves of Steel*, incorporating enclosed cityscapes, artificial lighting, and mechanized routines. " +
-                                "Use clean, elegant prose inspired by Asimov’s style to maintain authenticity while deepening complexity.";
+                            sFore +=
+                                "Continue the story seamlessly from the previous chapter: " + getResponse + ". " +
+                                "Let the tone and momentum carry forward with natural continuity, but deepen the story with evolving emotional resonance, " +
+                                "philosophical inquiry, and narrative complexity. Allow for a rich progression—not in sudden shifts, but in gradually unfolding " +
+                                "dialogue, inner thought, and subtle re-alignments in character dynamics. Let tension build slowly, like pressure within a sealed chamber. " +
+                                "Make the chapter lengthy and immersive—encourage expansive scenes that explore both external detail and internal dissonance. " +
+                                "Let conversations stretch, not with filler, but with purpose—characters should think, reason, hesitate, contradict themselves, " +
+                                "and reveal more in silence than in speech. Wit should emerge dry and sharply embedded in the realities of urban life and social order. " +
+                                "Twists should be the result of psychological friction, not plot mechanics. Base them in personal ethics, political ambiguity, and identity conflicts. " +
+                                "Embed the action within the claustrophobic infrastructure of the Cities: the sterile corridors, communal kitchens, overcrowded elevators, " +
+                                "and the omnipresent sound of machinery that regulates life with brutal indifference. " +
+                                "Use language that reflects Asimov’s—precise, unadorned, but filled with quiet wisdom. Let the narrative grow toward its insight, " +
+                                "not through announcements, but through accumulated nuance. Allow the reader to discover meaning alongside the characters, " +
+                                "and let the title of the chapter feel like the final note in a well-reasoned argument rather than a headline."
+                            ;
                         }
                         else
                         {
-                            sFore += " and base this first chapter around the plot: " +
-                                bookPlot +
-                                ". Begin with an immersive, psychological narrative set in the universe of *The Caves of Steel*. " +
-                                "Craft a strong, intelligent opening with dialogue that reveals more than it says—characters should carry secrets, prejudices, fears, and hopes. " +
-                                "Explore the underlying tensions between humans and robots, urban claustrophobia, and class divisions. " +
-                                "Describe each setting—corridors, dwellings, transportation systems, and surveillance mechanisms—with crisp, atmospheric clarity. " +
-                                "Characters should be introduced with detailed attention to facial expression, body posture, and emotional restraint or conflict. " +
-                                "Allow for surprises in character behavior that hint at deeper philosophical or ethical debates consistent with Asimov’s world. " +
-                                "Use minimalistic yet evocative language to create the distinctive tone of an Earth bound by steel and suspicion.";
+                            sFore +=
+                                "Begin the chapter with an immersive return to Earth in the age of *The Caves of Steel*. " +
+                                "Paint the world in rich, atmospheric detail—not by describing everything, but by revealing what matters: " +
+                                "the steel ceilings that feel too low, the dim corridors that enforce routine, the subtle anxiety of a society " +
+                                "squeezed between fear of Spacers and fear of change. Let the chapter be long and deliberate—designed not just to entertain, " +
+                                "but to provoke thought. Let the reader *experience* the city, from the antiseptic scent of food dispensers to the hum of mechanical walls. " +
+                                "Introduce characters through their subtle contradictions—the man who hates robots but can't explain why, " +
+                                "the woman who trusts logic but longs for something irrational. Allow fear, bias, and ambition to ripple beneath polite conversation. " +
+                                "Dialogue should be intelligent and layered, with motives revealed in hints and reversals. Let wit emerge as irony—an acknowledgment of a world " +
+                                "built on compromise. " +
+                                "The human-robot dynamic must be felt from the start, not as a battle, but as an uneasy truce woven into every public space and private fear. " +
+                                "Base the chapter around this plot: " + bookPlot +
+                                ". Let the plot guide structure, but allow the theme and message to emerge slowly—through mood, voice, and logic. " +
+                                "The chapter should feel like a conversation between the reader and the world. Let meaning surface on its own, " +
+                                "so that when the title finally arrives, it does not explain, but affirms what the reader has already come to understand.";
                         }
+
                         sFore += " Ensure the chapter balances narrative momentum with deep philosophical undercurrents, evoking questions of humanity, logic, and moral ambiguity.";
 
 
@@ -1948,7 +1961,7 @@ class Program
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, appPath);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Steel and Stars - The Aurora Paradox.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
                 //HtmlGenerator.AppendClosingHtmlTags("output.html");
             }
@@ -1961,13 +1974,13 @@ class Program
         else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string chapterTitlesPathPdf = "AI - Microsoft AI-900 Exam Prep - AN AI Perspective" + ".pdf";
+            string chapterTitlesPathPdf = "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox" + ".pdf";
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "AI - Microsoft AI-900 Exam Prep - AN AI Perspective.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)

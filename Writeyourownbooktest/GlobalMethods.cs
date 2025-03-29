@@ -34,6 +34,7 @@ using DinkToPdf.Contracts;
 using Aspose.Pdf;
 using PdfSharp.Pdf;
 using HtmlRendererCore.PdfSharp;
+using GlobalMethodsAndVars;
 
 using DocumentFormat.OpenXml.Drawing;
 using A = DocumentFormat.OpenXml.Drawing;
@@ -4189,64 +4190,39 @@ public static class HtmlGenerator
                 return filename;
             }
 
-            string emptyHtmlContent = @"<!DOCTYPE html>
+            string imagePath = GlobalMethodsAndVars.GlobalVars.MainHtmlImageAtTop; // Without .jpg
+            string firstPageInit = GlobalMethodsAndVars.GlobalVars.FirstPageInitiation; ;
+
+            string emptyHtmlContent = $@"
+            <!DOCTYPE html>
             <html lang=""en"">
             <head>
                 <meta charset=""UTF-8"">
                 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
                 <title>Image in HTML - A4 Format</title>
                 <style>
-                        p {
- 			                font-family: 'Arial, sans-serif;
-                                        font-size: 14px;
-                                        color: #000;
-                                        background-color: #fff;
-                                        line-height: 1.6;
-                                        margin: 0;
-                                        padding: 0;
-
-			                }
-		                table {
- 			                font-family: 'Arial, sans-serif;
-                                        font-size: 14px;
-                                        color: #000;
-                                        background-color: #fff;
-                                        line-height: 1.6;
-                                        margin: 0;
-                                        padding: 0;
-
-			                }
-		                ul {
- 			                font-family: 'Arial, sans-seriff;
-                                        font-size: 12px;
-                                        color: #000;
-                                        background-color: #fff;
-                                        line-height: 1.6;
-                                        margin: 0;
-                                        padding: 0;
-
-			                }
-		                li {
- 			                font-family: 'Arial, sans-seriff;
-                                        font-size: 14px;
-                                        color: #000;
-                                        background-color: #fff;
-                                        line-height: 1.6;
-                                        margin: 0;
-                                        padding: 0;
-
-			                }
-                        body {
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            font-size: 16px;
-                            color: #000;
-                            background-color: #fff;
-                            line-height: 1.6;
-                            margin: 0;
-                            padding: 0;
-                    }
-
-                    .text-container {
+                    p, table, ul, li {{
+                        font-family: 'Arial', sans-serif;
+                        font-size: 14px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    ul {{
+                        font-size: 12px;
+                    }}
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 16px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .text-container {{
                         width: 95%;
                         margin: auto;
                         margin-bottom: 40mm;
@@ -4255,9 +4231,8 @@ public static class HtmlGenerator
                         font-size: 12pt;
                         line-height: 1.5;
                         text-align: justify;
-                    }
-
-                    .a4-page {
+                    }}
+                    .a4-page {{
                         width: 210mm;
                         height: 297mm;
                         max-width: 210mm;
@@ -4266,14 +4241,13 @@ public static class HtmlGenerator
                         padding: 5mm 5mm 20mm 5mm;
                         background: white;
                         box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-                    }
-
-                    @media print {
-                        body {
+                    }}
+                    @media print {{
+                        body {{
                             margin: 0;
                             padding: 0;
-                        }
-                        .a4-page {
+                        }}
+                        .a4-page {{
                             width: 210mm;
                             height: 297mm;
                             max-width: 210mm;
@@ -4281,46 +4255,41 @@ public static class HtmlGenerator
                             margin: auto;
                             padding: 5mm 5mm 20mm 5mm;
                             box-shadow: none;
-                        }
-                    }
-
-                    .image-container {
+                        }}
+                    }}
+                    .image-container {{
                         text-align: center;
                         margin: 10px auto;
                         border: 1px solid black;
                         display: inline-block;
                         padding: 6px;
-                    }
-
-                    .image-container img {
+                    }}
+                    .image-container img {{
                         max-width: 100%;
                         height: auto;
-                    }
+                    }}
                 </style>
             </head>
             <body>
             <center>
-                <h1>Steel and Stars - The Aurora Paradox</h1>
+                <h1>Caves of Steel Universe</h1> 
+                <h2>The Aurora Paradox</h2>
                 <div class=""image-container"">
-                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image.jpg"" alt=""Inserted Image"">
+                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">
                 </div>
             </center>
             <div style='page-break-after: always;'></div>
             <br /><br /><br /><br />
             <div style=""text-align: center;  background-color: white; padding: 10px; margin: 20px auto; width: 80%;"">
-            <p style=""font-family: 'Garamond', serif; font-size: 25px; font-style: italic; color: black; margin: 0;"">
-
-                Inspired by AI. 
-                <br />In the style of:<br /><br />
-                <br />Artificial Intelligence.<br /><br /><br />
-                Images based on AI.
-            </p>
-        </div><div style='page-break-after: always;'></div>
+            {firstPageInit}
+            </div>
+            <div style='page-break-after: always;'></div>
             <div class='text-container'>
-                   
+       
             </div>
             </body>
             </html>";
+
 
 
             File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
