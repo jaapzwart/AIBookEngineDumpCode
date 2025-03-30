@@ -50,6 +50,7 @@
             picSecondPromptStatus = new PictureBox();
             picTitlePrefixPromptStatus = new PictureBox();
             lblStatus = new Label();
+            btnGeneratePrompts = new Button();
             ((System.ComponentModel.ISupportInitialize)picForePromptStatus).BeginInit();
             ((System.ComponentModel.ISupportInitialize)picSecondPromptStatus).BeginInit();
             ((System.ComponentModel.ISupportInitialize)picTitlePrefixPromptStatus).BeginInit();
@@ -154,6 +155,7 @@
             btnSaveAsDocHtml.TabIndex = 18;
             btnSaveAsDocHtml.Text = "Save As";
             btnSaveAsDocHtml.UseVisualStyleBackColor = true;
+            btnSaveAsDocHtml.Click += btnSaveAsDocHtml_Click;
             // 
             // txtExtraTouch
             // 
@@ -252,10 +254,21 @@
             lblStatus.TabIndex = 29;
             lblStatus.Text = "...";
             // 
+            // btnGeneratePrompts
+            // 
+            btnGeneratePrompts.Location = new Point(496, 773);
+            btnGeneratePrompts.Name = "btnGeneratePrompts";
+            btnGeneratePrompts.Size = new Size(315, 29);
+            btnGeneratePrompts.TabIndex = 30;
+            btnGeneratePrompts.Text = "Generate prompts on plotline";
+            btnGeneratePrompts.UseVisualStyleBackColor = true;
+            btnGeneratePrompts.Click += btnGeneratePrompts_Click;
+            // 
             // DocHtmlControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(btnGeneratePrompts);
             Controls.Add(lblStatus);
             Controls.Add(picTitlePrefixPromptStatus);
             Controls.Add(picSecondPromptStatus);
@@ -311,5 +324,6 @@
         private PictureBox picSecondPromptStatus;
         private PictureBox picTitlePrefixPromptStatus;
         private Label lblStatus;
+        private Button btnGeneratePrompts;
     }
 }

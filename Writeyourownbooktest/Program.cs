@@ -1943,7 +1943,7 @@ class Program
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, appPath);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - The Shattered Continuum.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
                 //HtmlGenerator.AppendClosingHtmlTags("output.html");
             }

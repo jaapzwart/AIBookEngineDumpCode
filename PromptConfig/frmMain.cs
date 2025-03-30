@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace PromptConfig
 {
-    public partial class Form1 : Form
+    public partial class frmMain : Form
     {
         private SplitContainer splitContainer;
         private TreeView treeMenu;
@@ -11,11 +11,12 @@ namespace PromptConfig
 
         // UserControls
         private UserControl genericControl = new GenericControl();
+        private UserControl docplotlineControl = new DocPlotline();
         private UserControl docHtmlControl = new DocHtmlControl();
         private UserControl docLongHtmlControl = new DocLongHtmlControl();
         private UserControl docLearningControl = new DocLearningControl();
 
-        public Form1()
+        public frmMain()
         {
             InitializeComponent();
             this.WindowState = FormWindowState.Maximized; // Fullscreen on launch
@@ -34,6 +35,7 @@ namespace PromptConfig
 
             treeMenu = new TreeView { Dock = DockStyle.Fill };
             treeMenu.Nodes.Add("Generic");
+            treeMenu.Nodes.Add("docplotline");
             treeMenu.Nodes.Add("dochtml");
             treeMenu.Nodes.Add("doclonghtml");
             treeMenu.Nodes.Add("doclearning");
@@ -61,6 +63,9 @@ namespace PromptConfig
             {
                 case "generic":
                     configPanel.Controls.Add(genericControl);
+                    break;
+                case "docplotline":
+                    configPanel.Controls.Add(docplotlineControl);
                     break;
                 case "dochtml":
                     configPanel.Controls.Add(docHtmlControl);

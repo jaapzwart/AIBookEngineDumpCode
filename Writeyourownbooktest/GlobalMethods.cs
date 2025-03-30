@@ -4273,7 +4273,7 @@ public static class HtmlGenerator
             </head>
             <body>
             <center>
-                <h1>Caves of Steel Universe</h1> 
+                <h1>Perry Rhodan Universe</h1> 
                 <h2>{bookTitle}</h2>
                 <div class=""image-container"">
                     <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">

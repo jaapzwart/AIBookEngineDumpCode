@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text;
 using Newtonsoft.Json;
 using System.Runtime.CompilerServices;
+using System.Net.NetworkInformation;
 
 
 namespace PromptConfig
@@ -21,12 +22,23 @@ namespace PromptConfig
                 <br />Isaac Asimov.<br /><br /><br />
                 Images based on Isaac Asimov.
             </p>";
+        public static string BookDescription { get; set; } = "A global book description for a book about Isaac Asimov.";
+        public static string BookPlot { get; set; } = "A global plotline for a book about Isaac Asimov.";
+        public static string BookPlotSteering { get; set; } = "Write with characters from the Isaac Asimov Caves of Steel Universe.";
+        public static string BookPlotSteerWheelWriters { get; set; } = "Isaac Asimov, Neil Stephenson";
+        public static string BookPlotSteerWheelUniverse { get; set; } = "Universe of Isaac Asimov Caves of Steel.";
     }
     public static class DocHtmlVars
     {
-        public static string foreTitlePrefix { get; set; } = "Write an extensive and detailed book chapter in the style of Isaac Asimovs The Caves of Steel and The Robots of Dawn. The chapter must be large and immersive, featuring richly developed characters with nuanced psychological depth. Include intelligent, thought-provoking dialogue that explores complex social, ethical, or technological themes. The interactions between characters should be subtle, sharp, and layered with tension or unspoken motives, leading to unforeseen twists and turns in the narrative. Incorporate vivid and atmospheric descriptions of futuristic urban or planetary settings—sprawling Cities, Spacer environments, or high-tech interiors—grounded in Asimovs clean, minimalistic prose. Ensure that the tone reflects the sociological, investigative, and philosophical essence of Asimovs Robot Series. Write this chapter on the title – ";
+        public static string foreTitlePrefix { get; set; } = "Write an extensive and detailed book chapter in the style of these writers " + GlobalVars.BookPlotSteerWheelWriters +
+            "The chapter must be large and immersive, featuring richly developed characters with nuanced psychological depth. " +
+            "Include intelligent, thought-provoking dialogue that explores complex social, ethical, or technological themes. " +
+            "The interactions between characters should be subtle, sharp, and layered with tension or unspoken motives, " +
+            "leading to unforeseen twists and turns in the narrative. " +
+            "Incorporate vivid and atmospheric descriptions of this universe:" + GlobalVars.BookPlotSteerWheelUniverse +
+            ". Write this chapter on the title – ";
         public static string firstImagePrefix { get; set; } = "Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image";
-        public static string forPrompt { get; set; } = "Begin the chapter with an immersive return to Earth in the age of *The Caves of Steel*. " +
+        public static string forPrompt { get; set; } = " Place the start of the chapter in this universe: " + GlobalVars.BookPlotSteerWheelUniverse +
                                 "Paint the world in rich, atmospheric detail—not by describing everything, but by revealing what matters: " +
                                 "the steel ceilings that feel too low, the dim corridors that enforce routine, the subtle anxiety of a society " +
                                 "squeezed between fear of Spacers and fear of change. Let the chapter be long and deliberate—designed not just to entertain, " +
