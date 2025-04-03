@@ -1455,7 +1455,7 @@ class Program
         else if (args[0] != null && args[0].Contains("talkBookConvertHtmlToPdf"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string filename = "talkfilebook_20250328184852713";
+            string filename = "talkfilebook_20250401120342091 - kopie (3)";
             string chapterTitlesPathHtml = filename + ".html";
             string chapterTitlesPathPdf = filename + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
@@ -1594,12 +1594,16 @@ class Program
 
                 #region Init Some vars
                 int liness = 0;
+                int linessResponse = 0;
+                string getResponseLiness = "";
+                List<string> responseLines = new List<string>();
                 string getResponse = "";
                 string getSummary = "";
                 string sFore = "";
                 string bigStory = "";
                 #endregion
 
+                
                 string sPrevious = "";
                 string line = "";
                 for(int i = 0; i < lines.Count; i++)
@@ -1637,7 +1641,7 @@ class Program
                     if (_examples.Contains("dochtml"))
                     {
                         string TopImage = GetPromptVars.MainHtmlImageTop;
-                        makingImage = "Create an Isaac Asimoc Caves of Steel geometry mathematical oriented SF image on the title - ";
+                        makingImage = GlobalVars.MainHtmlImageAtTop + " on the title - ";
                     }
                     if (_examples.Contains("doclonghtml"))
                     {
@@ -1811,17 +1815,80 @@ class Program
                     }
                     else if(_examples.Contains("dochtml"))
                     {
+                        
                         if (liness >= 1)
                         {
-                            string foreRunning = GetPromptVars.SecondRunningPrompt;
-                            sFore +=
-                                foreRunning + getResponse;
+                            string foreRunning = "";
+                            
+                            //------------------------
+                            // Do the chapter stack
+                            //------------------------
+                            if (liness <= 8) // Build the first three previous chapters
+                            {
+                                responseLines.Add(getResponse);
+                                getResponseLiness = "";
+                                foreach(string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
+                            else // Place the last two chapters as first two and add last chapter as last
+                            {
+                                getResponseLiness = "";
+                                List<string> resTemp = new List<string>();
+                                foreach(string res in responseLines)
+                                {
+                                    resTemp.Add(res);
+                                }
+                                responseLines.Clear();
+                                for(int iR = 1;iR <= 7; iR++)
+                                {
+                                    responseLines.Add((string)resTemp[iR]);
+                                }
+                                responseLines.Add(getResponse);
+                                foreach (string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
+                            //---------------------------
+                            // Do the creative prompts
+                            //---------------------------
+
+                            bool doCreative = false;
+                            if (doCreative)
+                            { 
+                                string changeRunningPrompt = await GetCreativePrompt(getResponseLiness, foreRunning);
+                                foreRunning = changeRunningPrompt;
+                            }
+                            else
+                            {
+                                foreRunning = GetPromptVars.SecondRunningPrompt;
+                            }
+                            sFore += " " + 
+                                foreRunning + " Make SURE THIS CHAPTER IS A NATURAL FIT AND CONTINUATION OF THE PREVIOUS CHAPTER:"
+                                + responseLines.First() + " AND ALSO MAKE IT A NATURAL " +
+                                "CONTINUATION AND ADDITION TO THE STORYLINE SO FAR that can be found in :" + getResponseLiness;
                         }
                         else
                         {
                             string foreRunning = GetPromptVars.FirstForePrompt;
-                            sFore +=
-                                foreRunning + bookPlot;
+                            //-------------------------------------------------
+                            // Do the creative prompt from the start or not
+                            //-------------------------------------------------
+                            bool doCreative = false;
+                            if (doCreative)
+                            {
+                                foreRunning = GetPromptVars.FirstForePrompt;
+                                string changeRunningPrompt = await GetCreativePrompt(bookPlot, foreRunning);
+                                foreRunning = changeRunningPrompt;
+                            }
+                            else
+                            {
+                                foreRunning = GetPromptVars.FirstForePrompt;
+                            }
+                            sFore += " " + 
+                                foreRunning + " Make it a very elaborative long chapter. Built upon plot - " + bookPlot;
                         }
                         string ExtraCatch = GetPromptVars.ExtraTouch;
                         sFore += ExtraCatch;
@@ -1939,11 +2006,12 @@ class Program
 
                     //await writer.WriteLineAsync(getResponse);
                     liness += 1;
+                    linessResponse += 1;
                 }
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, appPath);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - The Shattered Continuum.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - The Shattered Continuum v4.3.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
                 //HtmlGenerator.AppendClosingHtmlTags("output.html");
             }
@@ -1956,13 +2024,13 @@ class Program
         else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string chapterTitlesPathPdf = "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox" + ".pdf";
+            string chapterTitlesPathPdf = "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm" + ".pdf";
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "ASIMOV - Caves of Steel Universe - 1.The Aurora Paradox.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
@@ -3651,6 +3719,25 @@ class Program
                 Console.WriteLine("Ready writing books");
             }
         }
+    }
+
+    private static async Task<string> GetCreativePrompt(string getResponseLiness, string foreRunning)
+    {
+        string cHanger = "Based on the chapters and the story flow and depth so far found in this:" + getResponseLiness
+                                            + " - change the prompt for the AI o1 model to make it more adaptable to this storyline and create " +
+                                            " a more creative depth of scenery, dialogues, characters, intelligence, twists and story innovation" +
+                                            " to make this storyline even more attractive for the reader and unexpected. " +
+                                            " Be highly creative and innovative using divers writing techniques to keep the reader glued to" +
+                                            " the pages because of its excited twists and turns and depths of characters, scenery and storyline." +
+                                            " This is the prompt you" +
+                                            " must change for the next chapter:" + foreRunning;
+        Console.WriteLine("-------------------------------------");
+        Console.WriteLine("CHANGING THE PROMPT");
+        Console.WriteLine("-------------------------------------");
+        string changeRunningPrompt = await LargeGPT.CallLargeChatGPT(cHanger, "o3-mini");
+        Console.WriteLine("THE NEW PROMPT:" + '\n' + changeRunningPrompt);
+        Console.WriteLine("-------------------------------------");
+        return changeRunningPrompt;
     }
 
     private static void MakeAnImageOfTheFirstLetterInAString(string foreword)

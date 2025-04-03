@@ -240,47 +240,76 @@ namespace PromptConfig
 
                 lblStatus.Text = "Working on the fore prompt.";
                 lblStatus.Refresh();
-                sCall = "Rewrite the given prompt " +
-                    " towards this book description:" + GlobalVars.BookDescription +
-                    " Based on the universe:" +
-                    GlobalVars.BookPlotSteerWheelUniverse
-                    + " and based on the folowing plotline - " + GlobalVars.BookPlot
-                    + " and the prompt to rewrite is: " + DocHtmlVars.forPrompt
-                    + " and do not use special characters and end the prompt with ' Base it as a prelude to this plot -' ";
+                sCall = "Craft a chapter to guide the writing of a science fiction thriller," +
+                    " unfolding in chronological order as a natural foundation for the chapters that follow. Craft a subtle yet robust" +
+                    " introduction to the broader story arc, with the chapter title intricately woven into the narrative as a symbolic " +
+                    "and thematic lodestone, anchoring the tale with seamless intelligence. Infuse the writing with rich, deep, and " +
+                    "intelligent dialogue—witty, layered with psychological nuance, and brimming with emotional resonance—shared between " +
+                    "complex characters whose words spark intrigue and reveal hidden depths. Blend vivid, atmospheric descriptions of natural " +
+                    "and constructed settings, from eerie alien landscapes and sterile corridors to brooding cities and secretive chambers, " +
+                    "each scene rendered with thrilling clarity to pull the reader into the world. Plumb the characters’ inner lives with " +
+                    "immersive psychological detail, unveiling motives, doubts, and ideological frictions through intricate thoughts and monologues " +
+                    "that ripple with tension and foreshadow evolution. Let this chapter ignite a slow-burning intrigue and taut suspense, laying a " +
+                    "subtle yet unshakable narrative and philosophical groundwork for the full plot, resulting in a piece of rich, gripping literature " +
+                    "that sets the stage for an unforgettable journey. Do not mention the title of the chapter in the chapter itself" +
+                    " but make sure its used and present in the plotline of the chapter itself in a subtle manner. Also make sure that interesting, intelligent," +
+                    " thought provoking, witty, deep, innovative, creative and exciting dialogues between the characters are present throughout the chapter." + 
+                    " Build this chapter upon this plot:" + GlobalVars.BookPlot;
 
-                sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o1");
+
+
+                //sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o3-mini");
+                sPrompt = sCall;
                 txtFirstForePrompt.Text = sPrompt.Replace("\n", "");
                 txtFirstForePrompt.Refresh();
 
                 lblStatus.Text = "Working on the second prompt.";
                 lblStatus.Refresh();
-                sCall = "Rewrite this prompt " + DocHtmlVars.runningPrompt +
-                    " Towards this book description:" + GlobalVars.BookDescription + 
-                    " Base the universe on:" +
-                    GlobalVars.BookPlotSteerWheelUniverse
-                    + " based on the folowing plotline - " + GlobalVars.BookPlot
-                    + " and do not use special characters and end the prompt with ' Base on the previous part -' ";
+                sCall = "Craft a chapter that seamlessly flows as a natural " +
+                    "continuation of its predecessor, threading together rich, deep, and intelligent dialogue—crackling with wit, " +
+                    "psychological complexity, and thought-provoking exchanges that unravel the characters’ minds and motives. " +
+                    "Weave in vivid, atmospheric descriptions of scenery, capturing the untamed sprawl of natural landscapes and " +
+                    "the haunting allure or stark precision of constructed settings, from claustrophobic chambers to gleaming " +
+                    "futuristic cities or decaying alien structures, each brushstroke of detail amplifying the pulse of suspense. " +
+                    "Embed immersive inner monologues and intricate character thoughts that lay bare profound emotional currents, " +
+                    "wrenching moral quandaries, and the shifting tides of relationships, deepening the stakes with every revelation. " +
+                    "Ensure every element fuels a thrilling narrative that seizes the reader’s senses, guided silently yet firmly by the " +
+                    "chapter title as a beacon for mounting tension, narrative momentum, and thematic cohesion, resulting in a tapestry of " +
+                    "rich, evocative literature that builds irresistibly from the story’s prior beats.  Do not mention the title of the chapter in the chapter itself" +
+                    " but make sure its used and present in the plotline of the chapter itself in a subtle manner. Above all, make sure this chapter is" +
+                    " a continuation of the end of the previous chapter and builds further on its story line. Also make sure that interesting, intelligent," +
+                    " thought provoking, witty, deep, innovative, creative and exciting dialogues between the characters are present throughout the chapter.";
 
-                sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o1");
+
+                //sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o3-mini");
+                sPrompt = sCall;
                 txtSecondRunningPrompt.Text = sPrompt.Replace("\n", "");
                 txtSecondRunningPrompt.Refresh();
 
                 lblStatus.Text = "Working on the extra touch prompt.";
                 lblStatus.Refresh();
-                sCall = "Given as an example of a rich prompt - " + txtExtraTouch.Text
-                    + " Create a similar rich prompt but based on the folowing plotline - " + GlobalVars.BookPlot;
-
-                sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o1");
+                sCall = "Steer the writing of the of " +
+                    "the chapter to make extra sure that the dialogues between characters are intelligent, " +
+                    "thought provoking, rich, vivid and witty. Make extra sure that the description and integration " +
+                    "of the scenery of the environments are very well integrated into the story, rich, in depth, " +
+                    "intelligent and really are part of the overall story line. ";
+                sPrompt = sCall;
+                //sPrompt = await LargeGPTPrompt.CallLargeChatGPT(sCall, "o3-mini");
                 txtExtraTouch.Text = sPrompt.Replace("\n", "");
                 txtExtraTouch.Refresh();
 
                 lblStatus.Text = "...";
                 lblStatus.Refresh();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("Error:" + ex.Message);
             }
+        }
+
+        private void DocHtmlControl_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
