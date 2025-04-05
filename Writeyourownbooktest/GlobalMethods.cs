@@ -73,6 +73,7 @@ using Body = DocumentFormat.OpenXml.Wordprocessing.Body;
 using Shading = DocumentFormat.OpenXml.Wordprocessing.Shading;
 using Inline = DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline;
 using static IronPython.Modules._ast;
+using Aspose.Words.LowCode;
 
 
 namespace Writeyourownbooktest
@@ -4499,6 +4500,33 @@ public static class HtmlGenerator
                 FirstForePrompt = lines[2];
                 SecondRunningPrompt = lines[3];
                 ExtraTouch = lines[4];
+            }
+        }
+        private static string dataFileDocHtmlPlots = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Pdochtml.txt";
+        public static string _BookDescription { get; set; } = "";
+        public static string _BookPlotLine { get; set; } = "";
+        public static string _SteerPlot { get; set; } = "";
+        public static string _SteeringWriters { get; set; } = "";
+        public static string _BookSteeringWheelUniverse { get; set; } = "";
+        public static void LoadPlotDataDocHtmlPlotVars()
+        {
+            try
+            {
+                if (!File.Exists(dataFileDocHtmlPlots)) return;
+
+                string[] lines = File.ReadAllLines(dataFileDocHtmlPlots);
+                if (lines.Length >= 3)
+                {
+                    _BookDescription = lines[0].Replace("\n", "");
+                    _BookPlotLine = lines[1].Replace("\n", "");
+                    _SteerPlot = lines[2].Replace("\n", "");
+                    _SteeringWriters = lines[3].Replace("\n", "");
+                    _BookSteeringWheelUniverse = lines[4].Replace("\n", "");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error:" + ex.Message);
             }
         }
     }
