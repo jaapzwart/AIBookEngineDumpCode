@@ -2041,7 +2041,8 @@ class Program
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
 
-            string sClean, getQuote, sQuote, imagePath, Simage;
+            string getQuote, sQuote, imagePath, Simage;
+            string sClean = "";
             string iimage = "";
             string makingImage = "";
             bool success;
@@ -2056,45 +2057,48 @@ class Program
             {
                 iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
             }
+            bool doImage = false;
 
-            sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "");
-            imagePath = "";
+            if (doImage)
+            {
+                sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "");
+                imagePath = "";
 
-            if (_examples.Contains("dochtml"))
-            {
-                string FirstImageOfBook = GetPromptVars.MainHtmlImageTop;
-                makingImage = FirstImageOfBook + " ";
-            }
-            if (_examples.Contains("doclonghtml"))
-            {
-                makingImage = "Create an artificial intelligence image on the topic - ";
-            }
-            if (_examples.Contains("doclearn"))
-            {
-                makingImage = "Create a mathematical image inspired by artificial intelligence on ";
-            }
-
-            Simage = await GetDalleGood(makingImage + iimage);
-            if (Simage.Contains("Bad Request"))
-            {
-                Simage = await GetDalleGood(makingImage + sClean);
-            }
-            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
-
-            success = false;
-            while (!success)
-            {
-                try
+                if (_examples.Contains("dochtml"))
                 {
-                    await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
-                    success = true;
+                    string FirstImageOfBook = GetPromptVars.MainHtmlImageTop;
+                    makingImage = FirstImageOfBook + " ";
                 }
-                catch (Exception ex)
+                if (_examples.Contains("doclonghtml"))
                 {
-                    Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                    makingImage = "Create an artificial intelligence image on the topic - ";
+                }
+                if (_examples.Contains("doclearn"))
+                {
+                    makingImage = "Create a mathematical image inspired by artificial intelligence on ";
+                }
+
+                Simage = await GetDalleGood(makingImage + iimage);
+                if (Simage.Contains("Bad Request"))
+                {
+                    Simage = await GetDalleGood(makingImage + sClean);
+                }
+                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+                success = false;
+                while (!success)
+                {
+                    try
+                    {
+                        await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                        success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                    }
                 }
             }
-
             HtmlGenerator.CreateHtmlDocument(outputFilePathHtml);
 
             List<string> lines = new List<string>();
@@ -2133,16 +2137,18 @@ class Program
                 int liness = 0;
                 int linessResponse = 0;
                 string getResponseLiness = "";
-                List<string> responseLines = new List<string>();
+                List<string> responseLines = new List<string>(); // To store all chapters so far
                 string getResponse = "";
                 string sFore = "";
+                string previousChapterContent = ""; // To store the previous chapter's content
+                string overallPlotline = GetPromptVars._BookPlotLine; // Initial plotline, will evolve
 
                 string summaryAnPlotPossibilities = "";
                 string chosenWayForward = "";
 
                 string sPrevious = "";
                 string line = "";
-                int chapterCount = 10;
+                int chapterCount = 7;
 
                 for (int i = 0; i < chapterCount; i++)
                 {
@@ -2157,121 +2163,109 @@ class Program
 
                     if (_examples.Contains("dochtml"))
                     {
-                        if (liness >= 1)
+                        string foreRunning = "";
+                        string storylineSoFar = string.Join('\n', responseLines); // Current state of the story
+
+                        if (liness >= 1) // Not the first chapter
                         {
-                            string foreRunning = "";
-                            if (liness <= 3)
-                            {
-                                responseLines.Add(getResponse);
-                                getResponseLiness = string.Join('\n', responseLines);
-                            }
-                            else
-                            {
-                                getResponseLiness = "";
-                                List<string> resTemp = new List<string>(responseLines);
-                                responseLines.Clear();
-                                for (int iR = 1; iR <= 2; iR++) responseLines.Add(resTemp[iR]);
-                                responseLines.Add(getResponse);
-                                getResponseLiness = string.Join('\n', responseLines);
-                            }
+                            foreRunning = GetPromptVars.SecondRunningPrompt;
 
-                            bool doCreative = false;
-                            if (doCreative)
-                            {
-                                string changeRunningPrompt = await GetCreativePrompt(getResponseLiness, foreRunning);
-                                foreRunning = changeRunningPrompt;
-                            }
-                            else
-                            {
-                                foreRunning = GetPromptVars.SecondRunningPrompt;
-                            }
-
+                            // Enhanced prompt for continuity and progression toward resolution
                             sFore += " " + foreRunning +
-                                " Make SURE THIS CHAPTER IS A NATURAL FIT AND CONTINUATION OF THE PREVIOUS CHAPTER" +
-                                " and base the continuation on the plotline and most important elements of the previous chapter:" +
-                                responseLines.Last() + " AND ALSO MAKE IT A NATURAL CONTINUATION AND ADDITION TO THE STORYLINE SO FAR that can be found in :" + getResponseLiness;
+                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER'S ENDING: '" +
+                                     previousChapterContent.Trim().Substring(Math.Max(0, previousChapterContent.Length - 200)) + "'" +
+                                     " and BUILDS FURTHER on the PLOTLINE of the previous chapter: '" + responseLines.Last() + "'" +
+                                     " while ENRICHING the OVERALL STORYLINE of the book: '" + overallPlotline + "' in a COHERENT way." +
+                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion.";
                         }
-                        else
+                        else // First chapter
                         {
-                            string foreRunning = GetPromptVars.FirstForePrompt;
-                            bool doCreative = false;
-                            if (doCreative)
-                            {
-                                string changeRunningPrompt = await GetCreativePrompt(bookPlot, foreRunning);
-                                foreRunning = changeRunningPrompt;
-                            }
-                            sFore += " " + foreRunning + " Make it a very elaborative long chapter. Built upon plot - " + GetPromptVars._BookPlotLine;
+                            foreRunning = GetPromptVars.FirstForePrompt;
+                            sFore += " " + foreRunning +
+                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + overallPlotline + "'." +
+                                     " Set up the world, protagonist, and initial tension to establish a strong foundation for a complete story arc.";
                         }
 
+                        // Stage-specific instructions to guide the story arc
                         switch (chapterStage)
                         {
                             case "INTRO":
-                                sFore += " Begin the story by introducing the world, the protagonist, and initial setting. Begin tension slowly.";
+                                sFore += " Introduce the world, protagonist, and initial setting. Plant seeds of conflict and tension that will grow throughout the story.";
                                 break;
                             case "MIDDLE":
-                                sFore += " Introduce major conflict, unexpected twists, and psychological depth. Explore character arcs.";
+                                sFore += " Escalate the major conflict with unexpected twists and deepen character arcs. Build momentum toward a climactic resolution.";
                                 break;
                             case "END":
-                                sFore += " Bring the story to a thrilling climax and begin tying loose ends. Drive toward resolution.";
+                                if (i == chapterCount - 1) // Final chapter
+                                {
+                                    sFore += " Bring the story to a thrilling climax and provide a SATISFYING, LOGICAL RESOLUTION. Resolve the major conflicts introduced earlier: '" + overallPlotline + "' and tie up loose ends.";
+                                }
+                                else
+                                {
+                                    sFore += " Heighten the stakes, driving the story toward a thrilling climax. Begin resolving minor conflicts while setting up the final resolution.";
+                                }
                                 break;
                         }
 
                         string ExtraCatch = GetPromptVars.ExtraTouch;
-                        sFore += ExtraCatch;
+                        sFore += " " + ExtraCatch;
                     }
 
+                    // Generate chapter title based on the evolving plot
                     if (_examples.Contains("dochtml"))
                     {
                         if (liness >= 1)
                         {
-                            summaryAnPlotPossibilities = await LargeGPT.CallLargeChatGPT("Create a detailed summary of the previous chapter with its plot line and most important elements to build further upon on the next chapter. Offer the best possible option to continue the story based upon this previous chapter:" + responseLines.Last(), "o3-mini");
-                            chosenWayForward = summaryAnPlotPossibilities;
-                            iimage = await LargeGPT.CallLargeChatGPT("Create a good title based on the following chapter in max 5 words based on this summary:" + chosenWayForward, "o3-mini");
+                            iimage = await LargeGPT.CallLargeChatGPT(
+                                "Create a good title in max 5 words based on the previous chapter's ending: '" +
+                                previousChapterContent.Trim().Substring(Math.Max(0, previousChapterContent.Length - 200)) + "' and the current storyline: '" + overallPlotline + "'",
+                                "o3-mini");
                         }
                         else
                         {
-                            iimage = await LargeGPT.CallLargeChatGPT("Create a good title based on this chapter in max 5 words:" + GetPromptVars._BookPlotLine, "o3-mini");
+                            iimage = await LargeGPT.CallLargeChatGPT(
+                                "Create a good title in max 5 words based on this initial plotline: '" + overallPlotline + "'",
+                                "o3-mini");
                         }
                     }
 
-                    sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
-                    getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
-                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-
-                    imagePath = "";
-
-                    if (_examples.Contains("dochtml"))
+                    // Image generation
+                    if (doImage)
                     {
-                        string TopImage = GetPromptVars.MainHtmlImageTop;
-                        makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
-                    }
+                        sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
-                    #region Create Image for chapter
-                    Simage = await GetDalleGood(makingImage
-                               + iimage);
-                    if (Simage.Contains("Bad Request")) // Probably from words and length
-                    {
-                        Simage = await GetDalleGood(makingImage
-                        + sQuote);
-                    }
-                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
-
-                    success = false;
-                    while (!success) // Sometimes this went wrong (time issue), so, while wrong repeat and it worked.
-                    {
-                        try
+                        imagePath = "";
+                        if (_examples.Contains("dochtml"))
                         {
-                            await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
-                            success = true; // If the method completes successfully, set success to true to exit the loop
+                            string TopImage = GetPromptVars.MainHtmlImageTop;
+                            makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
                         }
-                        catch (Exception ex)
+
+                        Simage = await GetDalleGood(makingImage + iimage);
+                        if (Simage.Contains("Bad Request"))
                         {
-                            Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
-                            // Optionally, you can add a delay here before retrying
-                            // await Task.Delay(1000); // Delay for 1 second
+                            Simage = await GetDalleGood(makingImage + sQuote);
+                        }
+                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+                        success = false;
+                        while (!success)
+                        {
+                            try
+                            {
+                                await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                                success = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                            }
                         }
                     }
 
+                    // Append to HTML
                     if (_examples.Contains("dochtml"))
                     {
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
@@ -2284,10 +2278,20 @@ class Program
                     sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
 
+                    // Generate and store chapter content
                     if (_examples.Contains("dochtml"))
                     {
                         string front = "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
                         getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        responseLines.Add(getResponse); // Add to storyline history
+                        previousChapterContent = getResponse; // Update previous chapter content
+
+                        // Update overallPlotline with a summary of key developments
+                        string plotUpdate = await LargeGPT.CallLargeChatGPT(
+                            "Summarize the key plot developments in this chapter in 1-2 sentences: '" + getResponse + "'",
+                            "o3-mini");
+                        overallPlotline += " " + plotUpdate; // Evolve the plotline dynamically
+
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
@@ -2300,7 +2304,7 @@ class Program
 
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - Unpredicted Universe v1.1.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - Unpredicted Universe v1.2.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
@@ -7111,5 +7115,5 @@ class Character
 }
 
 
-#endregion
+
 
