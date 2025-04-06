@@ -4021,6 +4021,173 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
+        public static async Task<string> GetGoogleLarge(string textToTranslate)
+        {
+            string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+                // 1. Vertex AI Configuration
+                string projectId = Secrets.GoogleProjectID;
+                string location = "us-central1";
+                string publisher = "google";
+                string modelId = "gemini-2.5-pro-exp-03-25";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
+                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+                Console.WriteLine($"API Endpoint: {apiEndpoint}");
+                Console.WriteLine($"Credentials Path: {credentialsFilePath}");
+
+                // 2. Set up authentication
+                var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+                var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+                var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+                Console.WriteLine("Access Token retrieved successfully");
+
+                // 3. Prepare the Request
+                string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
+                Console.WriteLine($"Input Question: {question}");
+                var requestData = new
+                {
+                    contents = new[]
+                    {
+                    new { role = "user", parts = new[] { new { text = question } } }
+                },
+                    generationConfig = new
+                    {
+                        temperature = 0.4,
+                        maxOutputTokens = 64000,
+                        topP = 0.95,
+                        topK = 40
+                    }
+                };
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+                Console.WriteLine($"Request JSON: {jsonContent}");
+
+                // 4. Make the API call
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(apiEndpoint, content);
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Raw API Response: {result}");
+                    Console.WriteLine($"HTTP Status Code: {response.StatusCode}");
+
+                    // Check if the response was successful
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"API request failed with status {response.StatusCode}: {result}");
+                    }
+
+                    // 5. Parse the response
+                    var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
+                    if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+                    {
+                        string answer = responseData.Candidates[0].Content.Parts[0].Text;
+                        Console.WriteLine($"Extracted Answer: {answer}");
+                        return answer;
+                    }
+                    else
+                    {
+                        throw new Exception("No valid response from the API: " + result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+
+        }
+        public class ResponseData
+        {
+            public Candidate[] Candidates { get; set; }
+        }
+
+        public class Candidate
+        {
+            public Content Content { get; set; }
+            public string FinishReason { get; set; }
+            public int Index { get; set; }
+        }
+
+        public class Content
+        {
+            public Part[] Parts { get; set; }
+            public string Role { get; set; }
+        }
+
+        public class Part
+        {
+            public string Text { get; set; }
+        }
+        public static async Task<string> GetGoogle(string textToTranslate)
+        {
+            try
+            {
+                // Get the full path of the executable file
+                string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+
+                // 1. Vertex AI Configuration
+                string projectId = Secrets.GoogleProjectID;     // Your Google Cloud Project ID
+                string location = "us-central1";                // Your Vertex AI Model Location
+                string publisher = "google";                    // Publisher of the model (e.g., "google")
+                //string modelId = "text-bison@001";              // ID of the Vertex AI Model
+                string modelId = "gemini-2.5-pro-exp-03-25";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:predict";
+                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+                // 2. Prepare the Request
+                string question = textToTranslate;
+                var requestData = new
+                {
+                    instances = new[]
+                    {
+                    new { prompt = question }
+                },
+                    parameters = new
+                    {
+                        temperature = 0.4,                  // Slightly higher for creativity
+                        maxOutputTokens = 1024,             // Increased token limit
+                        topP = 0.95,                        // Nucleus sampling for diverse text
+                        topK = 40                           // Top-k sampling for focused text
+                    }
+                };
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+
+                // 3. Authenticate with OAuth 2.0 (Service Account)
+                GoogleCredential credential = GoogleCredential.FromFile(credentialsFilePath)
+                    .CreateScoped(PredictionServiceClient.DefaultScopes); // Adjust scopes if needed
+                var accessToken = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+
+                // 4. Send the REST Request
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(apiEndpoint, content);
+
+                // 4. Handle the Response
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseJson = await response.Content.ReadAsStringAsync();
+                    dynamic responseData = JsonConvert.DeserializeObject(responseJson);
+
+                    string answer = responseData.predictions[0].content;
+                    return answer;
+                }
+                else
+                {
+                    return "Failed: " + response.StatusCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+
+        }
 
     }
     public static class ConvertWordToHtml

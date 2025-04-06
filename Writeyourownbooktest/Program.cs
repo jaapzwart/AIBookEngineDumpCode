@@ -2021,6 +2021,14 @@ class Program
             }
 
         }
+        else if (args[0] != null && args[0].Contains("GetGoogle"))
+        {
+            string textToTranslate = "Write a very large book chapter with rich dialogues between characters about Pythagoras." +
+                "Without special characters and the character dialogues mus be integrated in the text itself with rich scenery" +
+                " descriptions, character descriptions, emotion description and it must become a very fluently readable chapter."; // Ensure this isn’t null in your actual use
+            string answer = await LargeGPT.GetGoogleLarge(textToTranslate);
+            Console.WriteLine($"Final Answer: {answer}");
+        }
         else if (args[0] != null && args[0].Contains("talkBookCompleteDynamic"))
         {
             GetPromptVars.LoadDataGenericPromptVars();
@@ -2140,7 +2148,7 @@ class Program
                 List<string> responseLines = new List<string>(); // To store all chapters so far
                 string getResponse = "";
                 string sFore = "";
-                string previousChapterContent = ""; // To store the previous chapter's content
+                string previousChapterSummary = ""; // To store a concise summary of the previous chapter
                 string overallPlotline = GetPromptVars._BookPlotLine; // Initial plotline, will evolve
 
                 string summaryAnPlotPossibilities = "";
@@ -2164,25 +2172,24 @@ class Program
                     if (_examples.Contains("dochtml"))
                     {
                         string foreRunning = "";
-                        string storylineSoFar = string.Join('\n', responseLines); // Current state of the story
+                        string storylineSoFar = string.Join('\n', responseLines); // Full text of prior chapters
 
                         if (liness >= 1) // Not the first chapter
                         {
                             foreRunning = GetPromptVars.SecondRunningPrompt;
 
-                            // Enhanced prompt for continuity and progression toward resolution
+                            // Enhanced prompt with full context and anti-repetition instruction
                             sFore += " " + foreRunning +
-                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER'S ENDING: '" +
-                                     previousChapterContent.Trim().Substring(Math.Max(0, previousChapterContent.Length - 200)) + "'" +
-                                     " and BUILDS FURTHER on the PLOTLINE of the previous chapter: '" + responseLines.Last() + "'" +
-                                     " while ENRICHING the OVERALL STORYLINE of the book: '" + overallPlotline + "' in a COHERENT way." +
-                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion.";
+                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as summarized here: '" + previousChapterSummary + "'" +
+                                     " and BUILDS FURTHER on these key events and themes without repeating specific actions, descriptions, or events (e.g., do not repeat scenes like standing before a doorway if already described)." +
+                                     " Incorporate the OVERALL STORYLINE so far: '" + overallPlotline + "' in a COHERENT way." +
+                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion, using the full context of prior chapters: '" + storylineSoFar + "' to avoid redundancy.";
                         }
                         else // First chapter
                         {
                             foreRunning = GetPromptVars.FirstForePrompt;
                             sFore += " " + foreRunning +
-                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + overallPlotline + "'." +
+                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + GetPromptVars._BookPlotLine + "'." +
                                      " Set up the world, protagonist, and initial tension to establish a strong foundation for a complete story arc.";
                         }
 
@@ -2217,14 +2224,14 @@ class Program
                         if (liness >= 1)
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on the previous chapter's ending: '" +
-                                previousChapterContent.Trim().Substring(Math.Max(0, previousChapterContent.Length - 200)) + "' and the current storyline: '" + overallPlotline + "'",
+                                "Create a good title in max 5 words based on the previous chapter's key events: '" + previousChapterSummary
+                                + " focussed on a possible next chapter.",
                                 "o3-mini");
                         }
                         else
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on this initial plotline: '" + overallPlotline + "'",
+                                "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars._BookPlotLine + "'",
                                 "o3-mini");
                         }
                     }
@@ -2284,13 +2291,14 @@ class Program
                         string front = "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
                         getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
                         responseLines.Add(getResponse); // Add to storyline history
-                        previousChapterContent = getResponse; // Update previous chapter content
 
-                        // Update overallPlotline with a summary of key developments
-                        string plotUpdate = await LargeGPT.CallLargeChatGPT(
-                            "Summarize the key plot developments in this chapter in 1-2 sentences: '" + getResponse + "'",
-                            "o3-mini");
-                        overallPlotline += " " + plotUpdate; // Evolve the plotline dynamically
+                        // Generate a concise summary of this chapter’s key plot points
+                        previousChapterSummary = await LargeGPT.CallLargeChatGPT(
+                            "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                            "o1");
+
+                        // Update overallPlotline with the summary
+                        overallPlotline += " " + previousChapterSummary;
 
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
@@ -2304,7 +2312,7 @@ class Program
 
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - Unpredicted Universe v1.2.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - Unpredicted Universe v1.3.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
