@@ -36,6 +36,12 @@
             txtFirstPageInitiation = new TextBox();
             btnSave = new Button();
             btnLoad = new Button();
+            txtMainTopTitleBook = new TextBox();
+            label1 = new Label();
+            txtNameOfBook = new TextBox();
+            label2 = new Label();
+            txtAmountOfChapters = new TextBox();
+            label3 = new Label();
             SuspendLayout();
             // 
             // lblImageHtmlTop
@@ -90,7 +96,7 @@
             // 
             // btnSave
             // 
-            btnSave.Location = new Point(638, 307);
+            btnSave.Location = new Point(638, 478);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(94, 29);
             btnSave.TabIndex = 6;
@@ -100,7 +106,7 @@
             // 
             // btnLoad
             // 
-            btnLoad.Location = new Point(527, 307);
+            btnLoad.Location = new Point(527, 478);
             btnLoad.Name = "btnLoad";
             btnLoad.Size = new Size(94, 29);
             btnLoad.TabIndex = 7;
@@ -108,10 +114,64 @@
             btnLoad.UseVisualStyleBackColor = true;
             btnLoad.Click += btnLoad_Click;
             // 
+            // txtMainTopTitleBook
+            // 
+            txtMainTopTitleBook.Location = new Point(235, 292);
+            txtMainTopTitleBook.Name = "txtMainTopTitleBook";
+            txtMainTopTitleBook.Size = new Size(731, 27);
+            txtMainTopTitleBook.TabIndex = 9;
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(38, 292);
+            label1.Name = "label1";
+            label1.Size = new Size(102, 20);
+            label1.TabIndex = 8;
+            label1.Text = "Main top title:";
+            // 
+            // txtNameOfBook
+            // 
+            txtNameOfBook.Location = new Point(235, 332);
+            txtNameOfBook.Name = "txtNameOfBook";
+            txtNameOfBook.Size = new Size(731, 27);
+            txtNameOfBook.TabIndex = 11;
+            // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Location = new Point(38, 332);
+            label2.Name = "label2";
+            label2.Size = new Size(108, 20);
+            label2.TabIndex = 10;
+            label2.Text = "Name of book:";
+            // 
+            // txtAmountOfChapters
+            // 
+            txtAmountOfChapters.Location = new Point(235, 369);
+            txtAmountOfChapters.Name = "txtAmountOfChapters";
+            txtAmountOfChapters.Size = new Size(82, 27);
+            txtAmountOfChapters.TabIndex = 13;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(38, 369);
+            label3.Name = "label3";
+            label3.Size = new Size(143, 20);
+            label3.TabIndex = 12;
+            label3.Text = "Amount of chapters:";
+            // 
             // GenericControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(txtAmountOfChapters);
+            Controls.Add(label3);
+            Controls.Add(txtNameOfBook);
+            Controls.Add(label2);
+            Controls.Add(txtMainTopTitleBook);
+            Controls.Add(label1);
             Controls.Add(btnLoad);
             Controls.Add(btnSave);
             Controls.Add(txtFirstPageInitiation);
@@ -121,7 +181,7 @@
             Controls.Add(lblTitleOfBook);
             Controls.Add(lblImageHtmlTop);
             Name = "GenericControl";
-            Size = new Size(761, 537);
+            Size = new Size(983, 537);
             Load += GenericControl_Load;
             ResumeLayout(false);
             PerformLayout();
@@ -137,5 +197,11 @@
         private TextBox txtFirstPageInitiation;
         private Button btnSave;
         private Button btnLoad;
+        private TextBox txtMainTopTitleBook;
+        private Label label1;
+        private TextBox txtNameOfBook;
+        private Label label2;
+        private TextBox txtAmountOfChapters;
+        private Label label3;
     }
 }

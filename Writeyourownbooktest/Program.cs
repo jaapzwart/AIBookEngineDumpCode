@@ -2055,6 +2055,9 @@ class Program
             string makingImage = "";
             bool success;
             string _examples = args[1];
+            string _AIProvider = args[2];
+            string _AILanguage = args[3];
+            string _AIImages = args[4];
 
             if (_examples.Contains("dochtml"))
             {
@@ -2066,6 +2069,8 @@ class Program
                 iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
             }
             bool doImage = false;
+            if (_AIImages.Contains("true"))
+                doImage = true;
 
             if (doImage)
             {
@@ -2156,7 +2161,7 @@ class Program
 
                 string sPrevious = "";
                 string line = "";
-                int chapterCount = 7;
+                int chapterCount = Convert.ToInt16(GetPromptVars.PageNumbersOfBook);
 
                 for (int i = 0; i < chapterCount; i++)
                 {
@@ -2234,6 +2239,12 @@ class Program
                                 "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars._BookPlotLine + "'",
                                 "o3-mini");
                         }
+                        string _translatedTitle = "";
+                        if (_AILanguage.Contains("xxx"))
+                            _translatedTitle = iimage;
+                        else if (_AILanguage.Contains("nl"))
+                            _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        iimage = _translatedTitle;
                     }
 
                     // Image generation
@@ -2283,27 +2294,57 @@ class Program
                     HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
                     getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
                     sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    string _translatedQuote = "";
+                    if (_AILanguage.Contains("xxx"))
+                        _translatedQuote = getQuote;
+                    else if (_AILanguage.Contains("nl"))
+                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
+                    getQuote = _translatedQuote;
                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
 
                     // Generate and store chapter content
                     if (_examples.Contains("dochtml"))
                     {
                         string front = "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        
+                        if(_AIProvider.Contains("o1"))
+                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        else
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
+
                         responseLines.Add(getResponse); // Add to storyline history
 
                         // Generate a concise summary of this chapter’s key plot points
-                        previousChapterSummary = await LargeGPT.CallLargeChatGPT(
-                            "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
-                            "o1");
+                        if(_AIProvider.Contains("o1"))
+                            previousChapterSummary = await LargeGPT.CallLargeChatGPT(
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                                "o1");
+                        else
+                            previousChapterSummary = await LargeGPT.GetGoogleLarge(
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
 
                         // Update overallPlotline with the summary
                         overallPlotline += " " + previousChapterSummary;
 
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+                        
+                        if (_AILanguage.Contains("xxx"))
+                            _translatedQuote = sQuote;
+                        else if (_AILanguage.Contains("nl"))
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                        sQuote = _translatedQuote;
+
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
+
+                        string _translatedText = "";
+                        if (_AILanguage.Contains("xxx"))
+                            _translatedText = getResponse;
+                        else if (_AILanguage.Contains("nl"))
+                            _translatedText = await  Writeyourownbooktest.Translator.TranslateTextToGiven(getResponse, _AILanguage);
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
+                                _translatedText, "Arial", 14);
                     }
 
                     liness += 1;
@@ -2312,7 +2353,7 @@ class Program
 
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe - Unpredicted Universe v1.3.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
@@ -2324,13 +2365,13 @@ class Program
         else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string chapterTitlesPathPdf = "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm" + ".pdf";
+            string chapterTitlesPathPdf = "MEDIEVAL - Isaac Newton Universe - The Apple and the Infinite - Newtons Journey to the Principia v1.1_O1_EN" + ".pdf";
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "MEDIEVAL - Isaac Newton Universe - The Apple and the Infinite - Newtons Journey to the Principia v1.1_O1_EN.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)

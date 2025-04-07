@@ -74,6 +74,7 @@ using Shading = DocumentFormat.OpenXml.Wordprocessing.Shading;
 using Inline = DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline;
 using static IronPython.Modules._ast;
 using Aspose.Words.LowCode;
+using Google.Cloud.Translation.V2;
 
 
 namespace Writeyourownbooktest
@@ -4361,7 +4362,8 @@ public static class HtmlGenerator
             string imagePath = GetPromptVars.MainHtmlImageTop; // Without .jpg
             string firstPageInit = GetPromptVars.FirstPageInitiation;
             string bookTitle = GetPromptVars.TitleBook;
-
+            string headerTitle = GetPromptVars.MainHeaderTitleOfBook;
+            
             string emptyHtmlContent = $@"
             <!DOCTYPE html>
             <html lang=""en"">
@@ -4441,7 +4443,7 @@ public static class HtmlGenerator
             </head>
             <body>
             <center>
-                <h1>Perry Rhodan Universe</h1> 
+                <h1>{headerTitle}</h1> 
                 <h2>{bookTitle}</h2>
                 <div class=""image-container"">
                     <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">
@@ -4636,6 +4638,10 @@ public static class HtmlGenerator
         public static string MainHtmlImageTop { get; set; } = "";
         public static string TitleBook { get; set; } = "";
         public static string FirstPageInitiation { get; set; } = "";
+        public static string MainHeaderTitleOfBook { get; set; } = "";
+        public static string HeaderTitleOfBook { get; set; } = "";
+        public static string NameOfBook { get; set; } = "";
+        public static string PageNumbersOfBook { get; set; } = "";
         public static void LoadDataGenericPromptVars()
         {
             if (!File.Exists(dataFileGenericPrompts)) return;
@@ -4646,6 +4652,9 @@ public static class HtmlGenerator
                 MainHtmlImageTop = lines[0];
                 TitleBook = lines[1];
                 FirstPageInitiation = lines[2].Replace("\\n", Environment.NewLine);
+                HeaderTitleOfBook = lines[3];
+                NameOfBook = lines[4];
+                PageNumbersOfBook = lines[5];
             }
         }
         private static string dataFileDocHtmlPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cdochtml.txt";
@@ -4697,5 +4706,84 @@ public static class HtmlGenerator
             }
         }
     }
+    /// <summary>
+    /// Provides methods to translate text to a specified language.
+    /// </summary>
+    public static class Translator
+    {
+        /// <summary>
+        /// The subscription key required to authenticate API requests.
+        /// This key is used for interacting with various services and APIs that require a subscription for access.
+        /// Typically, the subscription key is a unique string provided by the service provider.
+        /// </summary>
+        private static readonly string subscriptionKey = Secrets.subscriptionKey;
+
+        /// <summary>
+        /// The endpoint for accessing the translation API service.
+        /// </summary>
+        private static readonly string endpoint = Secrets.enddpoint;
+
+        /// <summary>
+        /// Represents the region information required for making API calls to the translation service.
+        /// This value is used as the subscription region in the HTTP request headers when
+        /// interacting with the translation API.
+        /// </summary>
+        private static readonly string location = Secrets.llocation;
+
+        /// <summary>
+        /// Translates the provided text to the language specified in the global settings.
+        /// </summary>
+        /// <param name="inputText">The text to be translated.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the translated text.</returns>
+        public static async Task<string> TranslateTextToGiven(string inputText, string _language)
+        {
+            string route = "/translate?api-version=3.0&from=en&to=" + _language;
+
+            object[] body = new object[] { new { Text = inputText } };
+            var requestBody = JsonConvert.SerializeObject(body);
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Post;
+                request.RequestUri = new Uri(endpoint + route);
+                request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
+                request.Headers.Add("Ocp-Apim-Subscription-Region", location);
+
+                HttpResponseMessage response = await client.SendAsync(request);
+                string result = await response.Content.ReadAsStringAsync();
+                var translationResult = JsonConvert.DeserializeObject<TranslationResult[]>(result);
+                return translationResult[0].Translations[0].Text;
+            }
+        }
+
+        /// <summary>
+        /// Represents the result of a translation operation.
+        /// </summary>
+        private class TranslationResult
+        {
+            /// <summary>
+            /// Gets or sets the translation results from the API response.
+            /// </summary>
+            public Translation[] Translations { get; set; }
+        }
+
+        /// <summary>
+        /// Represents a translation result with the translated text.
+        /// </summary>
+        private class Translation
+        {
+            /// <summary>
+            /// Gets or sets the text content used in translation results.
+            /// </summary>
+            /// <value>
+            /// A string representing the translated text.
+            /// </value>
+            public string Text { get; set; }
+        }
+    }
+
 }
+
 

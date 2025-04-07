@@ -22,6 +22,10 @@ namespace PromptConfig
                 <br />Isaac Asimov.<br /><br /><br />
                 Images based on Isaac Asimov.
             </p>";
+        public static string HeaderTitleOfBook { get; set; } = "";
+        public static string NameOfBook { get; set; } = "";
+        public static string NumberOfPages { get; set; } = "";
+
         public static string BookDescription { get; set; } = "A global book description for a book about Isaac Asimov.";
         public static string BookPlot { get; set; } = "A global plotline for a book about Isaac Asimov.";
         public static string BookPlotSteering { get; set; } = "Write with characters from the Isaac Asimov Caves of Steel Universe.";
