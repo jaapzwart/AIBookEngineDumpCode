@@ -2202,19 +2202,25 @@ class Program
                         switch (chapterStage)
                         {
                             case "INTRO":
-                                sFore += " Introduce the world, protagonist, and initial setting. Plant seeds of conflict and tension that will grow throughout the story.";
+                                sFore += " Continue where the last chapter ended." +
+                                    " Introduce the main characters, setting, and premise. Establish the initial situation and hint at the central conflict. Provide enough context to engage the reader and set expectations for the journey ahead.";
                                 break;
+
                             case "MIDDLE":
-                                sFore += " Escalate the major conflict with unexpected twists and deepen character arcs. Build momentum toward a climactic resolution.";
+                                sFore += " Continue where the last chapter ended." +
+                                    "Develop the main conflict and expand the story world. Show how characters respond to increasing challenges. Introduce new complications, deepen relationships, and shift the story toward a turning point.";
                                 break;
+
                             case "END":
                                 if (i == chapterCount - 1) // Final chapter
                                 {
-                                    sFore += " Bring the story to a thrilling climax and provide a SATISFYING, LOGICAL RESOLUTION. Resolve the major conflicts introduced earlier: '" + overallPlotline + "' and tie up loose ends.";
+                                    sFore += " Continue where the last chapter ended." +
+                                        "Conclude the story with a satisfying resolution. Address the main conflict: '" + overallPlotline + "', and bring character arcs to a logical and meaningful end. Ensure the ending aligns with the tone and structure of the overall narrative.";
                                 }
                                 else
                                 {
-                                    sFore += " Heighten the stakes, driving the story toward a thrilling climax. Begin resolving minor conflicts while setting up the final resolution.";
+                                    sFore += " Continue where the last chapter ended." +
+                                        "Raise the tension and push the story toward its conclusion. Begin resolving subplots and highlight consequences of earlier actions. Prepare the stage for the final chapter by tightening the focus on the central narrative.";
                                 }
                                 break;
                         }
