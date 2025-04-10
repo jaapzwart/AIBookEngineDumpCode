@@ -158,7 +158,7 @@ Extra parameters when doing a thriller
 // Creates a thriller based on the info in some files.
 // parameters
 // 1 = which loop
-// 2 = which AI
-// 3 = which language
+// 2 = which AI (o1 or Google)
+// 3 = which language (xxx, nl, none)
 // 4 = images or not
 

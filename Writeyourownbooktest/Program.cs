@@ -1,6 +1,4 @@
-﻿
-
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using OpenAI_API.Completions;
 using OpenAI_API.Images;
 using System.Text;
@@ -1788,7 +1786,7 @@ class Program
                                 + "<p>paragraph</p>"
                                 + " but do not mention the chapter number and title at the start of the chapter.";
 
-                                getResponse = await LargeGPT.CallLargeChatGPT(sFore + front, "o1") + "\n\n";
+                                getResponse = await LargeGPT.CallLargeChatGPT(sFore + front, "o1", "none") + "\n\n";
                                 getResponse.Replace(sForOrg + sLine, "");
                                 sPlotters += getResponse;
                                 sFore = sForOrg;
@@ -1938,7 +1936,7 @@ class Program
                             + "<p>paragraph</p>"
                             + " but do not mention the chapter number and title at the start of the chapter.";
 
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1", "none") + "\n\n";
                         //getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
                         //Console.WriteLine("\n\n" + "CHAPTER TEXT" + "\n\n" + getResponse);
 
@@ -1966,7 +1964,7 @@ class Program
                             + " but do not mention the chapter number and title at the start of the chapter."
                             + " Build further with elaborate detailed examples on this part:" + sForeExample;
 
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1") + "\n\n";
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sForeExample, "o1", "none") + "\n\n";
 
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
                         HtmlGenerator.AppendBoldTextToHtml(outputFilePathHtml, "Examples", false, "Arial", 20);
@@ -1985,7 +1983,7 @@ class Program
                             + "<p>paragraph</p>"
                             + " but do not mention the chapter number and title at the start of the chapter.";
 
-                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1", "none") + "\n\n";
                         //getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
                         //Console.WriteLine("\n\n" + "CHAPTER TEXT" + "\n\n" + getResponse);
 
@@ -2026,7 +2024,7 @@ class Program
             string textToTranslate = "Write a very large book chapter with rich dialogues between characters about Pythagoras." +
                 "Without special characters and the character dialogues mus be integrated in the text itself with rich scenery" +
                 " descriptions, character descriptions, emotion description and it must become a very fluently readable chapter."; // Ensure this isn’t null in your actual use
-            string answer = await LargeGPT.GetGoogleLarge(textToTranslate);
+            string answer = await LargeGPT.GetGoogleLarge(textToTranslate, "nl");
             Console.WriteLine($"Final Answer: {answer}");
         }
         else if (args[0] != null && args[0].Contains("talkBookCompleteDynamic"))
@@ -2058,6 +2056,7 @@ class Program
             string _AIProvider = args[2];
             string _AILanguage = args[3];
             string _AIImages = args[4];
+            string _iimage = "";
 
             if (_examples.Contains("dochtml"))
             {
@@ -2090,8 +2089,8 @@ class Program
                 {
                     makingImage = "Create a mathematical image inspired by artificial intelligence on ";
                 }
-
-                Simage = await GetDalleGood(makingImage + iimage);
+                _iimage = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+                Simage = await GetDalleGood(makingImage + _iimage);
                 if (Simage.Contains("Bad Request"))
                 {
                     Simage = await GetDalleGood(makingImage + sClean);
@@ -2165,8 +2164,6 @@ class Program
 
                 for (int i = 0; i < chapterCount; i++)
                 {
-                    sFore = DocHtmlVars.foreTitlePrefix;
-
                     int introLimit = chapterCount / 3;
                     int midLimit = (chapterCount * 2) / 3;
                     string chapterStage = "";
@@ -2232,25 +2229,28 @@ class Program
                     // Generate chapter title based on the evolving plot
                     if (_examples.Contains("dochtml"))
                     {
-                        if (liness >= 1)
+                        if (_examples.Contains("dochtml"))
                         {
-                            iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on the previous chapter's key events: '" + previousChapterSummary
-                                + " focussed on a possible next chapter.",
-                                "o3-mini");
+                            if (liness >= 1)
+                            {
+                                iimage = await LargeGPT.CallLargeChatGPT(
+                                    "Create a good title in max 5 words based on the previous chapter's key events: '" + previousChapterSummary
+                                    + " focussed on a possible next chapter.",
+                                    "o3-mini", "none");
+                            }
+                            else
+                            {
+                                iimage = await LargeGPT.CallLargeChatGPT(
+                                    "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars._BookPlotLine + "'",
+                                    "o3-mini", "none");
+                            }
+                            string _translatedTitle = "";
+                            if (_AILanguage.Contains("xxx"))
+                                _translatedTitle = iimage;
+                            else if (_AILanguage.Contains("nl"))
+                                _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                            iimage = _translatedTitle;
                         }
-                        else
-                        {
-                            iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars._BookPlotLine + "'",
-                                "o3-mini");
-                        }
-                        string _translatedTitle = "";
-                        if (_AILanguage.Contains("xxx"))
-                            _translatedTitle = iimage;
-                        else if (_AILanguage.Contains("nl"))
-                            _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
-                        iimage = _translatedTitle;
                     }
 
                     // Image generation
@@ -2266,8 +2266,8 @@ class Program
                             string TopImage = GetPromptVars.MainHtmlImageTop;
                             makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
                         }
-
-                        Simage = await GetDalleGood(makingImage + iimage);
+                        _iimage = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+                        Simage = await GetDalleGood(makingImage + _iimage);
                         if (Simage.Contains("Bad Request"))
                         {
                             Simage = await GetDalleGood(makingImage + sQuote);
@@ -2309,33 +2309,52 @@ class Program
                     getQuote = _translatedQuote;
                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
 
+                    
                     // Generate and store chapter content
                     if (_examples.Contains("dochtml"))
                     {
                         string front = "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
                         
                         if(_AIProvider.Contains("o1"))
-                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1", _AILanguage) + "\n\n";
+                        else if (_AIProvider.Contains("o3-mini"))
+                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini", _AILanguage) + "\n\n";
                         else
-                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, _AILanguage) + "\n\n";
 
-                        responseLines.Add(getResponse); // Add to storyline history
+                        if (responseLines.Count >= 4)
+                        {
+                            responseLines.RemoveAt(0); // Remove the oldest entry
+                        }
+                        //responseLines.Add(getResponse); // Add the latest chapter
 
+                        
                         // Generate a concise summary of this chapter’s key plot points
                         if(_AIProvider.Contains("o1"))
                             previousChapterSummary = await LargeGPT.CallLargeChatGPT(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
-                                "o1");
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 " +
+                                "paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                                "o1", _AILanguage);
+                        else if (_AIProvider.Contains("o3-mini"))
+                            previousChapterSummary = await LargeGPT.CallLargeChatGPT(
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
+                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                                "o3-mini", _AILanguage);
                         else
                             previousChapterSummary = await LargeGPT.GetGoogleLarge(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
+                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'", _AILanguage);
 
-                        // Update overallPlotline with the summary
-                        overallPlotline += " " + previousChapterSummary;
-
+                        responseLines.Add(previousChapterSummary);
+                        overallPlotline = "";
+                        foreach (var rline in responseLines)
+                        {
+                            overallPlotline += rline + '\n';
+                        }
+                        
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
-                        
+
                         if (_AILanguage.Contains("xxx"))
                             _translatedQuote = sQuote;
                         else if (_AILanguage.Contains("nl"))
@@ -2344,13 +2363,12 @@ class Program
 
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
 
-                        string _translatedText = "";
-                        if (_AILanguage.Contains("xxx"))
-                            _translatedText = getResponse;
-                        else if (_AILanguage.Contains("nl"))
-                            _translatedText = await  Writeyourownbooktest.Translator.TranslateTextToGiven(getResponse, _AILanguage);
+                        //string bLine = "";
+                        //if (liness >= 6)
+                        //    bLine = "hold";
+
                         HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
-                                _translatedText, "Arial", 14);
+                                getResponse, "Arial", 14);
                     }
 
                     liness += 1;
@@ -4081,7 +4099,7 @@ class Program
         Console.WriteLine("-------------------------------------");
         Console.WriteLine("CHANGING THE PROMPT");
         Console.WriteLine("-------------------------------------");
-        string changeRunningPrompt = await LargeGPT.CallLargeChatGPT(cHanger, "o3-mini");
+        string changeRunningPrompt = await LargeGPT.CallLargeChatGPT(cHanger, "o3-mini", "none");
         Console.WriteLine("THE NEW PROMPT:" + '\n' + changeRunningPrompt);
         Console.WriteLine("-------------------------------------");
         return changeRunningPrompt;
@@ -6742,7 +6760,7 @@ Exactly Like this example structure:
                         {
                             sFore += '\n' + sSteeringFirstChapter;
                         }
-                        languagestring = await LargeGPT.CallLargeChatGPT(answer3, "o3-mini");
+                        languagestring = await LargeGPT.CallLargeChatGPT(answer3, "o3-mini", "none");
                         liness += 1;
                     }
                     if (_prompt_provider.Contains("ChatGPT"))

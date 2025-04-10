@@ -42,6 +42,8 @@
             label2 = new Label();
             txtAmountOfChapters = new TextBox();
             label3 = new Label();
+            btSaveAs = new Button();
+            btnLoadFrom = new Button();
             SuspendLayout();
             // 
             // lblImageHtmlTop
@@ -96,7 +98,7 @@
             // 
             // btnSave
             // 
-            btnSave.Location = new Point(638, 478);
+            btnSave.Location = new Point(843, 478);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(94, 29);
             btnSave.TabIndex = 6;
@@ -106,7 +108,7 @@
             // 
             // btnLoad
             // 
-            btnLoad.Location = new Point(527, 478);
+            btnLoad.Location = new Point(598, 478);
             btnLoad.Name = "btnLoad";
             btnLoad.Size = new Size(94, 29);
             btnLoad.TabIndex = 7;
@@ -162,10 +164,32 @@
             label3.TabIndex = 12;
             label3.Text = "Amount of chapters:";
             // 
+            // btSaveAs
+            // 
+            btSaveAs.Location = new Point(733, 478);
+            btSaveAs.Name = "btSaveAs";
+            btSaveAs.Size = new Size(94, 29);
+            btSaveAs.TabIndex = 14;
+            btSaveAs.Text = "Save As";
+            btSaveAs.UseVisualStyleBackColor = true;
+            btSaveAs.Click += btSaveAs_Click;
+            // 
+            // btnLoadFrom
+            // 
+            btnLoadFrom.Location = new Point(474, 478);
+            btnLoadFrom.Name = "btnLoadFrom";
+            btnLoadFrom.Size = new Size(94, 29);
+            btnLoadFrom.TabIndex = 15;
+            btnLoadFrom.Text = "Load from";
+            btnLoadFrom.UseVisualStyleBackColor = true;
+            btnLoadFrom.Click += btnLoadFrom_Click;
+            // 
             // GenericControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+            Controls.Add(btnLoadFrom);
+            Controls.Add(btSaveAs);
             Controls.Add(txtAmountOfChapters);
             Controls.Add(label3);
             Controls.Add(txtNameOfBook);
@@ -203,5 +227,7 @@
         private Label label2;
         private TextBox txtAmountOfChapters;
         private Label label3;
+        private Button btSaveAs;
+        private Button btnLoadFrom;
     }
 }

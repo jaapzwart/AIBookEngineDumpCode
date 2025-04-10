@@ -75,6 +75,7 @@ using Inline = DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline;
 using static IronPython.Modules._ast;
 using Aspose.Words.LowCode;
 using Google.Cloud.Translation.V2;
+using Aspose.Pdf.Plugins;
 
 
 namespace Writeyourownbooktest
@@ -3900,74 +3901,110 @@ namespace Writeyourownbooktest
         private static readonly string apiKey = Secrets._o1;
         private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
        
-        public static async Task<string> CallLargeChatGPT(string prompt, string modell)
+        public static async Task<string> CallLargeChatGPT(string prompt, string modell, string language)
         {
-            var response = await CallOpenAIAsync(prompt, modell);
+            var response = await CallOpenAIAsync(prompt, modell, language);
             Console.WriteLine(response);
             return response;
         }
 
-        static async Task<string> CallOpenAIAsync(string prompt, string modell)
+        static async Task<string> CallOpenAIAsync(string prompt, string modell, string targetLanguage)
         {
-            int maxRetries = 10;
-            int retryCount = 0;
-            TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
-
-            while (retryCount < maxRetries)
+            try
             {
-                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
+                string translation = "";
+                if (targetLanguage.Contains("nl"))
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+                    translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
+                        "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
+                        "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
+                        "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
+                        "the setting. After generating this chapter, translate it to Dutch. Provide only the translated content " +
+                        "of the book chapter without any leading or trailing text. Ensure that the paragraphs in the translated " +
+                        "chapter are divided by <p></p> html tags.";
 
-                    var requestBody = new
+                }
+                else if (targetLanguage.Contains("none"))
+                {
+                    // Nothing to do
+                }
+                else
+                {
+                    translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
+                                        "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
+                                        "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
+                                        "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
+                                        "the setting. Provide only the translated content " +
+                                        "of the book chapter without any leading or trailing text. " +
+                                        "Ensure that the paragraphs in the translated " +
+                                        "chapter are divided by <p></p> html tags.";
+                }
+                int maxRetries = 10;
+                int retryCount = 0;
+                TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
+
+                string question = translation + ":" + prompt;
+
+                while (retryCount < maxRetries)
+                {
+                    using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
                     {
-                        model = modell, // Change to "o1" if needed
-                        messages = new[]
+                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                        var requestBody = new
                         {
-                    new { role = "system", content = "You are a helpful assistant." },
-                    new { role = "user", content = prompt }
-                },
-                        max_completion_tokens = 100000
-                    };
+                            model = modell, // Change to "o1" if needed
+                            messages = new[]
+                            {
+                                new { role = "system", content = "You are a helpful assistant." },
+                                new { role = "user", content = question }
+                            },
+                            max_completion_tokens = 100000
+                        };
 
-                    string jsonContent = JsonConvert.SerializeObject(requestBody);
-                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                        string jsonContent = JsonConvert.SerializeObject(requestBody);
+                        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                    try
-                    {
-                        HttpResponseMessage response = await client.PostAsync(apiUrl, content);
-                        response.EnsureSuccessStatusCode(); // Throw exception if not successful
+                        try
+                        {
+                            HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                            response.EnsureSuccessStatusCode(); // Throw exception if not successful
 
-                        string responseString = await response.Content.ReadAsStringAsync();
-                        using JsonDocument doc = JsonDocument.Parse(responseString);
+                            string responseString = await response.Content.ReadAsStringAsync();
+                            using JsonDocument doc = JsonDocument.Parse(responseString);
 
-                        return doc.RootElement
-                            .GetProperty("choices")[0]
-                            .GetProperty("message")
-                            .GetProperty("content")
-                            .GetString();
-                    }
-                    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-                    {
-                        // Handle timeout
-                        retryCount++;
-                        if (retryCount >= maxRetries)
-                            throw new Exception("Request timed out after multiple retries.", ex);
+                            return doc.RootElement
+                                .GetProperty("choices")[0]
+                                .GetProperty("message")
+                                .GetProperty("content")
+                                .GetString();
+                        }
+                        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                        {
+                            // Handle timeout
+                            retryCount++;
+                            if (retryCount >= maxRetries)
+                                throw new Exception("Request timed out after multiple retries.", ex);
 
-                        await Task.Delay(delay);
-                        delay *= 2; // Exponential backoff
-                    }
-                    catch (HttpRequestException ex)
-                    {
-                        // Handle other request errors (like network issues)
-                        retryCount++;
-                        if (retryCount >= maxRetries)
-                            throw new Exception("HTTP request failed after multiple retries.", ex);
+                            await Task.Delay(delay);
+                            delay *= 2; // Exponential backoff
+                        }
+                        catch (HttpRequestException ex)
+                        {
+                            // Handle other request errors (like network issues)
+                            retryCount++;
+                            if (retryCount >= maxRetries)
+                                throw new Exception("HTTP request failed after multiple retries.", ex);
 
-                        await Task.Delay(delay);
-                        delay *= 4;
+                            await Task.Delay(delay);
+                            delay *= 4;
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error:" + ex.Message);
             }
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
@@ -4022,8 +4059,33 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
-        public static async Task<string> GetGoogleLarge(string textToTranslate)
+        public static async Task<string> GetGoogleLarge(string textToTranslate, string targetLanguage)
         {
+            string translation = "";
+            if (targetLanguage.Contains("nl"))
+            {
+                translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
+                    "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
+                    "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
+                    "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
+                    "the setting. After generating this chapter, translate it to Dutch. Provide only the translated content " +
+                    "of the book chapter without any leading or trailing text. Ensure that the paragraphs in the translated " +
+                    "chapter are divided by <p></p> html tags.";
+                
+            }
+            else
+            {
+                translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
+                                    "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
+                                    "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
+                                    "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
+                                    "the setting. Provide only the translated content " +
+                                    "of the book chapter without any leading or trailing text. " +
+                                    "Ensure that the paragraphs in the translated " +
+                                    "chapter are divided by <p></p> html tags.";
+            }
+                
+
             string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
             try
             {
@@ -4045,7 +4107,8 @@ namespace Writeyourownbooktest
                 Console.WriteLine("Access Token retrieved successfully");
 
                 // 3. Prepare the Request
-                string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
+                //string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
+                string question = translation + ":" + textToTranslate;
                 Console.WriteLine($"Input Question: {question}");
                 var requestData = new
                 {
@@ -4086,6 +4149,12 @@ namespace Writeyourownbooktest
                     {
                         string answer = responseData.Candidates[0].Content.Parts[0].Text;
                         Console.WriteLine($"Extracted Answer: {answer}");
+
+                         int index = answer.IndexOf("<p>"); // Delete everything before the first <p> (sloppy shit, yes.)
+                        if (index >= 0)
+                        {
+                            answer = answer.Substring(index);
+                        }
                         return answer;
                     }
                     else
@@ -4123,10 +4192,16 @@ namespace Writeyourownbooktest
         {
             public string Text { get; set; }
         }
-        public static async Task<string> GetGoogle(string textToTranslate)
+        public static async Task<string> GetGoogle(string textToTranslate, string targetLanguage)
         {
             try
             {
+                string translation = "";
+                if (targetLanguage.Contains("nl"))
+                    translation = "Translate the answer of the following to Dutch";
+                else
+                    translation = "";
+
                 // Get the full path of the executable file
                 string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
 
@@ -4139,7 +4214,8 @@ namespace Writeyourownbooktest
                 string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:predict";
                 var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
                 // 2. Prepare the Request
-                string question = textToTranslate;
+                //string question = textToTranslate;
+                string question = translation + "-" + textToTranslate;
                 var requestData = new
                 {
                     instances = new[]
@@ -4149,7 +4225,7 @@ namespace Writeyourownbooktest
                     parameters = new
                     {
                         temperature = 0.4,                  // Slightly higher for creativity
-                        maxOutputTokens = 1024,             // Increased token limit
+                        maxOutputTokens = 64000,             // Increased token limit
                         topP = 0.95,                        // Nucleus sampling for diverse text
                         topK = 40                           // Top-k sampling for focused text
                     }
