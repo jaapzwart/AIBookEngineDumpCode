@@ -3895,116 +3895,80 @@ namespace Writeyourownbooktest
         #endregion
 
     }
-    
+
     public static class LargeGPT
     {
         private static readonly string apiKey = Secrets._o1;
         private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
-       
-        public static async Task<string> CallLargeChatGPT(string prompt, string modell, string language)
+
+        public static async Task<string> CallLargeChatGPT(string prompt, string modell)
         {
-            var response = await CallOpenAIAsync(prompt, modell, language);
+            var response = await CallOpenAIAsync(prompt, modell);
             Console.WriteLine(response);
             return response;
         }
 
-        static async Task<string> CallOpenAIAsync(string prompt, string modell, string targetLanguage)
+        static async Task<string> CallOpenAIAsync(string prompt, string modell)
         {
-            try
+            int maxRetries = 10;
+            int retryCount = 0;
+            TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
+
+            while (retryCount < maxRetries)
             {
-                string translation = "";
-                if (targetLanguage.Contains("nl"))
+                using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
                 {
-                    translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
-                        "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
-                        "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
-                        "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
-                        "the setting. After generating this chapter, translate it to Dutch. Provide only the translated content " +
-                        "of the book chapter without any leading or trailing text. Ensure that the paragraphs in the translated " +
-                        "chapter are divided by <p></p> html tags.";
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
 
-                }
-                else if (targetLanguage.Contains("none"))
-                {
-                    // Nothing to do
-                }
-                else
-                {
-                    translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
-                                        "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
-                                        "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
-                                        "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
-                                        "the setting. Provide only the translated content " +
-                                        "of the book chapter without any leading or trailing text. " +
-                                        "Ensure that the paragraphs in the translated " +
-                                        "chapter are divided by <p></p> html tags.";
-                }
-                int maxRetries = 10;
-                int retryCount = 0;
-                TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
-
-                string question = translation + ":" + prompt;
-
-                while (retryCount < maxRetries)
-                {
-                    using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
+                    var requestBody = new
                     {
-                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-
-                        var requestBody = new
+                        model = modell, // Change to "o1" if needed
+                        messages = new[]
                         {
-                            model = modell, // Change to "o1" if needed
-                            messages = new[]
-                            {
-                                new { role = "system", content = "You are a helpful assistant." },
-                                new { role = "user", content = question }
-                            },
-                            max_completion_tokens = 100000
-                        };
+                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "user", content = prompt }
+                },
+                        max_completion_tokens = 100000
+                    };
 
-                        string jsonContent = JsonConvert.SerializeObject(requestBody);
-                        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    string jsonContent = JsonConvert.SerializeObject(requestBody);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                        try
-                        {
-                            HttpResponseMessage response = await client.PostAsync(apiUrl, content);
-                            response.EnsureSuccessStatusCode(); // Throw exception if not successful
+                    try
+                    {
+                        HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                        response.EnsureSuccessStatusCode(); // Throw exception if not successful
 
-                            string responseString = await response.Content.ReadAsStringAsync();
-                            using JsonDocument doc = JsonDocument.Parse(responseString);
+                        string responseString = await response.Content.ReadAsStringAsync();
+                        using JsonDocument doc = JsonDocument.Parse(responseString);
 
-                            return doc.RootElement
-                                .GetProperty("choices")[0]
-                                .GetProperty("message")
-                                .GetProperty("content")
-                                .GetString();
-                        }
-                        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-                        {
-                            // Handle timeout
-                            retryCount++;
-                            if (retryCount >= maxRetries)
-                                throw new Exception("Request timed out after multiple retries.", ex);
+                        return doc.RootElement
+                            .GetProperty("choices")[0]
+                            .GetProperty("message")
+                            .GetProperty("content")
+                            .GetString();
+                    }
+                    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                    {
+                        // Handle timeout
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("Request timed out after multiple retries.", ex);
 
-                            await Task.Delay(delay);
-                            delay *= 2; // Exponential backoff
-                        }
-                        catch (HttpRequestException ex)
-                        {
-                            // Handle other request errors (like network issues)
-                            retryCount++;
-                            if (retryCount >= maxRetries)
-                                throw new Exception("HTTP request failed after multiple retries.", ex);
+                        await Task.Delay(delay);
+                        delay *= 2; // Exponential backoff
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        // Handle other request errors (like network issues)
+                        retryCount++;
+                        if (retryCount >= maxRetries)
+                            throw new Exception("HTTP request failed after multiple retries.", ex);
 
-                            await Task.Delay(delay);
-                            delay *= 4;
-                        }
+                        await Task.Delay(delay);
+                        delay *= 4;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error:" + ex.Message);
             }
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
@@ -4059,33 +4023,8 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
-        public static async Task<string> GetGoogleLarge(string textToTranslate, string targetLanguage)
+        public static async Task<string> GetGoogleLarge(string textToTranslate)
         {
-            string translation = "";
-            if (targetLanguage.Contains("nl"))
-            {
-                translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
-                    "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
-                    "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
-                    "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
-                    "the setting. After generating this chapter, translate it to Dutch. Provide only the translated content " +
-                    "of the book chapter without any leading or trailing text. Ensure that the paragraphs in the translated " +
-                    "chapter are divided by <p></p> html tags.";
-                
-            }
-            else
-            {
-                translation = "Generate a very long, deep, elaborate, descriptive, vivid, " +
-                                    "and intelligent book chapter on the following question. This chapter should be a literature gem, " +
-                                    "featuring compelling twists and turns, intelligent character dialogue that reveals their " +
-                                    "personalities and motivations, and vivid descriptions of the scenery that immerse the reader in " +
-                                    "the setting. Provide only the translated content " +
-                                    "of the book chapter without any leading or trailing text. " +
-                                    "Ensure that the paragraphs in the translated " +
-                                    "chapter are divided by <p></p> html tags.";
-            }
-                
-
             string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
             try
             {
@@ -4107,8 +4046,7 @@ namespace Writeyourownbooktest
                 Console.WriteLine("Access Token retrieved successfully");
 
                 // 3. Prepare the Request
-                //string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
-                string question = translation + ":" + textToTranslate;
+                string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
                 Console.WriteLine($"Input Question: {question}");
                 var requestData = new
                 {
@@ -4149,12 +4087,6 @@ namespace Writeyourownbooktest
                     {
                         string answer = responseData.Candidates[0].Content.Parts[0].Text;
                         Console.WriteLine($"Extracted Answer: {answer}");
-
-                         int index = answer.IndexOf("<p>"); // Delete everything before the first <p> (sloppy shit, yes.)
-                        if (index >= 0)
-                        {
-                            answer = answer.Substring(index);
-                        }
                         return answer;
                     }
                     else

@@ -36,6 +36,7 @@
             txtFirstPageInitiation = new TextBox();
             btnSave = new Button();
             btnLoad = new Button();
+<<<<<<< HEAD
             txtMainTopTitleBook = new TextBox();
             label1 = new Label();
             txtNameOfBook = new TextBox();
@@ -44,6 +45,8 @@
             label3 = new Label();
             btSaveAs = new Button();
             btnLoadFrom = new Button();
+=======
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
             SuspendLayout();
             // 
             // lblImageHtmlTop
@@ -98,7 +101,11 @@
             // 
             // btnSave
             // 
+<<<<<<< HEAD
             btnSave.Location = new Point(843, 478);
+=======
+            btnSave.Location = new Point(638, 307);
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(94, 29);
             btnSave.TabIndex = 6;
@@ -108,7 +115,11 @@
             // 
             // btnLoad
             // 
+<<<<<<< HEAD
             btnLoad.Location = new Point(598, 478);
+=======
+            btnLoad.Location = new Point(527, 307);
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
             btnLoad.Name = "btnLoad";
             btnLoad.Size = new Size(94, 29);
             btnLoad.TabIndex = 7;
@@ -116,6 +127,7 @@
             btnLoad.UseVisualStyleBackColor = true;
             btnLoad.Click += btnLoad_Click;
             // 
+<<<<<<< HEAD
             // txtMainTopTitleBook
             // 
             txtMainTopTitleBook.Location = new Point(235, 292);
@@ -184,10 +196,13 @@
             btnLoadFrom.UseVisualStyleBackColor = true;
             btnLoadFrom.Click += btnLoadFrom_Click;
             // 
+=======
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
             // GenericControl
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
+<<<<<<< HEAD
             Controls.Add(btnLoadFrom);
             Controls.Add(btSaveAs);
             Controls.Add(txtAmountOfChapters);
@@ -196,6 +211,8 @@
             Controls.Add(label2);
             Controls.Add(txtMainTopTitleBook);
             Controls.Add(label1);
+=======
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
             Controls.Add(btnLoad);
             Controls.Add(btnSave);
             Controls.Add(txtFirstPageInitiation);
@@ -205,7 +222,7 @@
             Controls.Add(lblTitleOfBook);
             Controls.Add(lblImageHtmlTop);
             Name = "GenericControl";
-            Size = new Size(983, 537);
+            Size = new Size(761, 537);
             Load += GenericControl_Load;
             ResumeLayout(false);
             PerformLayout();
@@ -221,6 +238,7 @@
         private TextBox txtFirstPageInitiation;
         private Button btnSave;
         private Button btnLoad;
+<<<<<<< HEAD
         private TextBox txtMainTopTitleBook;
         private Label label1;
         private TextBox txtNameOfBook;
@@ -229,5 +247,7 @@
         private Label label3;
         private Button btSaveAs;
         private Button btnLoadFrom;
+=======
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
     }
 }
