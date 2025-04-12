@@ -401,3 +401,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Writeyourownbook/Writeyourownbook.csproj
+/Writeyourownbook/Controllers/HomeController.cs
+/Writeyourownbook/Views/_ViewStart.cshtml
+/Writeyourownbook/Views/Web.config
