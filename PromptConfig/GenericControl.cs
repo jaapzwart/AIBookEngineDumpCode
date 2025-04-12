@@ -31,11 +31,17 @@ namespace PromptConfig
             string[] lines = {
                 txtMainHtmlImageTop.Text,
                 txtTitleBook.Text,
-                txtFirstPageInitiation.Text.Replace(Environment.NewLine, "\\n") // Preserve line breaks
+                txtFirstPageInitiation.Text.Replace(Environment.NewLine, "\\n"), // Preserve line breaks
+                txtMainTopTitleBook.Text,
+                txtNameOfBook.Text,
+                txtAmountOfChapters.Text
             };
             GlobalVars.MainHtmlImageAtTop = lines[0];
             GlobalVars.TitleOfBook = lines[1];
             GlobalVars.FirstPageInitiation = lines[2];
+            GlobalVars.HeaderTitleOfBook = lines[3];
+            GlobalVars.NameOfBook = lines[4];
+            GlobalVars.NumberOfPages = lines[5];
 
             File.WriteAllLines(dataFile, lines);
             MessageBox.Show("Data saved successfully.");
@@ -90,12 +96,9 @@ namespace PromptConfig
                 txtMainHtmlImageTop.Text = lines[0];
                 txtTitleBook.Text = lines[1];
                 txtFirstPageInitiation.Text = lines[2].Replace("\\n", Environment.NewLine);
-<<<<<<< HEAD
                 txtMainTopTitleBook.Text = lines[3];
                 txtNameOfBook.Text = lines[4];
                 txtAmountOfChapters.Text = lines[5];
-=======
->>>>>>> parent of 79e6ab8 (Coherent trillers.)
             }
         }
         public void LoadDataFile()

@@ -2163,8 +2163,6 @@ class Program
 
                 for (int i = 0; i < chapterCount; i++)
                 {
-                    sFore = DocHtmlVars.foreTitlePrefix;
-
                     int introLimit = chapterCount / 3;
                     int midLimit = (chapterCount * 2) / 3;
                     string chapterStage = "";
