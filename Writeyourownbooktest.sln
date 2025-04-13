@@ -9,7 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PromptConfig", "PromptConfi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GlobalMethodsAndVars", "GlobalMethodsAndVars\GlobalMethodsAndVars.csproj", "{535E20DB-AB2D-425D-8A6A-37AE17AE5282}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpliBook", "SimpliBook\SimpliBook.csproj", "{2BF091F8-0944-46F4-B09A-202E92A63682}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpliBook", "SimpliBook\SimpliBook.csproj", "{2BF091F8-0944-46F4-B09A-202E92A63682}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{16D81A8F-823C-4E8F-A47E-B983AE6DE309}"
+	ProjectSection(SolutionItems) = preProject
+		Ideas.txt = Ideas.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

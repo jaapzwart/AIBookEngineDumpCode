@@ -3896,7 +3896,20 @@ namespace Writeyourownbooktest
         #endregion
 
     }
+    public static class UpDateProgress
+    {
+        public static async Task SendProgressAsync(int percent)
+        {
+            using var client = new HttpClient();
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { "value", percent.ToString() }
+            });
 
+            // Replace with your local MVC app URL
+            await client.PostAsync("https://localhost:7110/Progress/update", content);
+        }
+    }
     public static class LargeGPT
     {
         private static readonly string apiKey = Secrets._o1;
@@ -3989,13 +4002,13 @@ namespace Writeyourownbooktest
                 // Define the request body 
                 var requestBody = new
                 {
-                    model = "grok-beta",
+                    model = "grok-3-mini-beta",
                     messages = new[]
                     {
                     new { role = "system", content = Secrets.GrokRole },
                     new { role = "user", content = question }
                     },
-                    max_tokens = 4096  // Set to the maximum allowed tokens for grok-beta
+                    max_tokens = 40000  // Set to the maximum allowed tokens for grok-beta
                 };
 
                 // Serialize the request body to JSON 

@@ -2312,18 +2312,31 @@ class Program
 
                         if (_AIProvider.Contains("o1"))
                             getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
-                        else
+                        else if (_AIProvider.Contains("o3-mini"))
+                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini") + "\n\n";
+                        else if(_AIProvider.Contains("Google"))
                             getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
+                        else if (_AIProvider.Contains("Grok"))
+                            getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
 
                         responseLines.Add(getResponse); // Add to storyline history
 
                         // Generate a concise summary of this chapter’s key plot points
                         if (_AIProvider.Contains("o1"))
                             previousChapterSummary = await LargeGPT.CallLargeChatGPT(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
+                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
                                 "o1");
-                        else
+                        else if (_AIProvider.Contains("o3-mini"))
+                            previousChapterSummary = await LargeGPT.CallLargeChatGPT(
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
+                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
+                                "o3-mini");
+                        else if(_AIProvider.Contains("Google"))
                             previousChapterSummary = await LargeGPT.GetGoogleLarge(
+                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
+                        else if (_AIProvider.Contains("Grok"))
+                            previousChapterSummary = await LargeGPT.GetGrok(
                                 "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
 
                         // Update overallPlotline with the summary
@@ -2348,7 +2361,7 @@ class Program
                         HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
                                 _translatedText, "Arial", 14);
                     }
-
+                    //await UpDateProgress.SendProgressAsync(liness);
                     liness += 1;
                     linessResponse += 1;
                 }

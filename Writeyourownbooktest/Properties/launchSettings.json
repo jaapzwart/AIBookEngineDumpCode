@@ -2,7 +2,7 @@
   "profiles": {
     "Writeyourownbooktest": {
       "commandName": "Project",
-      "commandLineArgs": "\"GetGoogleLarge\""
+      "commandLineArgs": "\"talkBookCompleteDynamic\" \"dochtml\" \"o3-mini\" \"nl\" \"true\""
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"
