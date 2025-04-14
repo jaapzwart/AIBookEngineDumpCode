@@ -2029,9 +2029,9 @@ class Program
         }
         else if (args[0] != null && args[0].Contains("talkBookCompleteDynamic"))
         {
-            GetPromptVars.LoadDataGenericPromptVars();
-            GetPromptVars.LoadDataDocHtmlPromptVars();
-            GetPromptVars.LoadPlotDataDocHtmlPlotVars();
+            await GetPromptVars.LoadDataGenericPromptVars();
+            await GetPromptVars.LoadDataDocHtmlPromptVars();
+            await GetPromptVars.LoadPlotDataDocHtmlPlotVars();
 
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             string filePath = "FileTalkBook.txt";
@@ -2152,7 +2152,7 @@ class Program
                 string getResponse = "";
                 string sFore = "";
                 string previousChapterSummary = ""; // To store a concise summary of the previous chapter
-                string overallPlotline = GetPromptVars._BookPlotLine; // Initial plotline, will evolve
+                string overallPlotline = GetPromptVars.BookPlotLine; // Initial plotline, will evolve
 
                 string summaryAnPlotPossibilities = "";
                 string chosenWayForward = "";
@@ -2190,7 +2190,7 @@ class Program
                         {
                             foreRunning = GetPromptVars.FirstForePrompt;
                             sFore += " " + foreRunning +
-                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + GetPromptVars._BookPlotLine + "'." +
+                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + GetPromptVars.BookPlotLine + "'." +
                                      " Set up the world, protagonist, and initial tension to establish a strong foundation for a complete story arc.";
                         }
 
@@ -2238,7 +2238,7 @@ class Program
                         else
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars._BookPlotLine + "'",
+                                "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars.BookPlotLine + "'",
                                 "o3-mini");
                         }
                         string _translatedTitle = "";

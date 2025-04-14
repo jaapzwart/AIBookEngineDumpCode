@@ -76,6 +76,7 @@ using static IronPython.Modules._ast;
 using Aspose.Words.LowCode;
 using Google.Cloud.Translation.V2;
 using Aspose.Pdf.Plugins;
+using static Community.CsharpSqlite.Sqlite3;
 
 
 namespace Writeyourownbooktest
@@ -1321,7 +1322,7 @@ namespace Writeyourownbooktest
                 Run run = para.AppendChild(new Run());
 
                 // Assuming you might want to add text initially
-                run.AppendChild(new Text("Hello, this is a new document created on " + DateTime.Now.ToString()));
+                run.AppendChild(new Text("Hello, this is a new document created on " + System.DateTime.Now.ToString()));
 
                 // Save changes to the document.
                 mainPart.Document.Save();
@@ -4656,7 +4657,8 @@ public static class HtmlGenerator
     }
     public static class GetPromptVars
     {
-        private static string dataFileGenericPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cbookdata.txt";
+        private static string dataFilePath = GlobalBlobber.readFileFromBlob("Cbookdata.txt", "mindscriptedconfig");
+
         public static string MainHtmlImageTop { get; set; } = "";
         public static string TitleBook { get; set; } = "";
         public static string FirstPageInitiation { get; set; } = "";
@@ -4664,67 +4666,82 @@ public static class HtmlGenerator
         public static string HeaderTitleOfBook { get; set; } = "";
         public static string NameOfBook { get; set; } = "";
         public static string PageNumbersOfBook { get; set; } = "";
-        public static void LoadDataGenericPromptVars()
-        {
-            if (!File.Exists(dataFileGenericPrompts)) return;
 
-            string[] lines = File.ReadAllLines(dataFileGenericPrompts);
-            if (lines.Length >= 3)
-            {
-                MainHtmlImageTop = lines[0];
-                TitleBook = lines[1];
-                FirstPageInitiation = lines[2].Replace("\\n", Environment.NewLine);
-                HeaderTitleOfBook = lines[3];
-                NameOfBook = lines[4];
-                PageNumbersOfBook = lines[5];
-            }
+        public static async Task LoadDataGenericPromptVars(string fileName = "Cbookdata.txt")
+        {
+            string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                Secrets.cloudStorageConnString,
+                "mindscriptedconfig",
+                fileName
+            );
+
+            // Assign safely based on line count
+            if (lines.Length > 0) MainHtmlImageTop = lines[0];
+            if (lines.Length > 1) TitleBook = lines[1];
+            if (lines.Length > 2) FirstPageInitiation = lines[2];
+            if (lines.Length > 3) MainHeaderTitleOfBook = lines[3];
+            if (lines.Length > 4) HeaderTitleOfBook = lines[4];
+            if (lines.Length > 5) NameOfBook = lines[5];
+            if (lines.Length > 6) PageNumbersOfBook = lines[6];
         }
-        private static string dataFileDocHtmlPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cdochtml.txt";
-        public static string TitlePrefix { get; set; } = "";
-        public static string ImagePrefix { get; set; } = "";
-        public static string FirstForePrompt { get; set; } = "";
-        public static string SecondRunningPrompt { get; set; } = "";
-        public static string ExtraTouch { get; set; } = "";
-        public static void LoadDataDocHtmlPromptVars()
+
+        public static string TitlePrefix { get; private set; } = "";
+        public static string ImagePrefix { get; private set; } = "";
+        public static string FirstForePrompt { get; private set; } = "";
+        public static string SecondRunningPrompt { get; private set; } = "";
+        public static string ExtraTouch { get; private set; } = "";
+
+        private static bool _promptDataLoaded = false;
+
+        public static async Task LoadDataDocHtmlPromptVars(string fileName = "Cdochtml.txt")
         {
+            if (_promptDataLoaded) return;
 
-            if (!File.Exists(dataFileDocHtmlPrompts)) return;
+            string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                Secrets.cloudStorageConnString,
+                "mindscriptedconfig",
+                fileName
+            );
 
-            string[] lines = File.ReadAllLines(dataFileDocHtmlPrompts);
-            if (lines.Length >= 5)
-            {
-                TitlePrefix = lines[0];
-                ImagePrefix = lines[1];
-                FirstForePrompt = lines[2];
-                SecondRunningPrompt = lines[3];
-                ExtraTouch = lines[4];
-            }
+            if (lines.Length > 0) TitlePrefix = lines[0];
+            if (lines.Length > 1) ImagePrefix = lines[1];
+            if (lines.Length > 2) FirstForePrompt = lines[2];
+            if (lines.Length > 3) SecondRunningPrompt = lines[3];
+            if (lines.Length > 4) ExtraTouch = lines[4];
+
+            _promptDataLoaded = true;
         }
-        private static string dataFileDocHtmlPlots = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Pdochtml.txt";
-        public static string _BookDescription { get; set; } = "";
-        public static string _BookPlotLine { get; set; } = "";
-        public static string _SteerPlot { get; set; } = "";
-        public static string _SteeringWriters { get; set; } = "";
-        public static string _BookSteeringWheelUniverse { get; set; } = "";
-        public static void LoadPlotDataDocHtmlPlotVars()
+        public static string BookDescription { get; private set; } = "";
+        public static string BookPlotLine { get; private set; } = "";
+        public static string SteerPlot { get; private set; } = "";
+        public static string SteeringWriters { get; private set; } = "";
+        public static string BookSteeringWheelUniverse { get; private set; } = "";
+
+        private static bool _plotDataLoaded = false;
+
+        public static async Task LoadPlotDataDocHtmlPlotVars(string fileName = "Pdochtml.txt")
         {
+            if (_plotDataLoaded) return;
+
             try
             {
-                if (!File.Exists(dataFileDocHtmlPlots)) return;
+                string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                    Secrets.cloudStorageConnString,
+                    "mindscriptedconfig",
+                    fileName
+                );
 
-                string[] lines = File.ReadAllLines(dataFileDocHtmlPlots);
-                if (lines.Length >= 3)
-                {
-                    _BookDescription = lines[0].Replace("\n", "");
-                    _BookPlotLine = lines[1].Replace("\n", "");
-                    _SteerPlot = lines[2].Replace("\n", "");
-                    _SteeringWriters = lines[3].Replace("\n", "");
-                    _BookSteeringWheelUniverse = lines[4].Replace("\n", "");
-                }
+                if (lines.Length > 0) BookDescription = lines[0].Trim();
+                if (lines.Length > 1) BookPlotLine = lines[1].Trim();
+                if (lines.Length > 2) SteerPlot = lines[2].Trim();
+                if (lines.Length > 3) SteeringWriters = lines[3].Trim();
+                if (lines.Length > 4) BookSteeringWheelUniverse = lines[4].Trim();
+
+                _plotDataLoaded = true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error:" + ex.Message);
+                Console.WriteLine("Error loading plot config from blob: " + ex.Message);
             }
         }
     }
