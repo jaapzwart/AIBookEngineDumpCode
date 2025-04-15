@@ -2107,6 +2107,12 @@ class Program
                     catch (Exception ex)
                     {
                         Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                        Simage = await GetDalleGood(makingImage + iimage);
+                        if (Simage.Contains("Bad Request"))
+                        {
+                            Simage = await GetDalleGood(makingImage + sClean);
+                        }
+                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                     }
                 }
             }
@@ -2281,6 +2287,12 @@ class Program
                             catch (Exception ex)
                             {
                                 Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + sClean);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                             }
                         }
                     }

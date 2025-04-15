@@ -4666,6 +4666,7 @@ public static class HtmlGenerator
         public static string HeaderTitleOfBook { get; set; } = "";
         public static string NameOfBook { get; set; } = "";
         public static string PageNumbersOfBook { get; set; } = "";
+        public static string FileNameBlob { get; set; } = "";
 
         public static async Task LoadDataGenericPromptVars(string fileName = "Cbookdata.txt")
         {
@@ -4680,9 +4681,9 @@ public static class HtmlGenerator
             if (lines.Length > 1) TitleBook = lines[1];
             if (lines.Length > 2) FirstPageInitiation = lines[2];
             if (lines.Length > 3) MainHeaderTitleOfBook = lines[3];
-            if (lines.Length > 4) HeaderTitleOfBook = lines[4];
-            if (lines.Length > 5) NameOfBook = lines[5];
-            if (lines.Length > 6) PageNumbersOfBook = lines[6];
+            if (lines.Length > 4) NameOfBook = lines[4];
+            if (lines.Length > 5) PageNumbersOfBook = lines[5];
+            if (lines.Length > 5) FileNameBlob = lines[6];
         }
 
         public static string TitlePrefix { get; private set; } = "";
