@@ -2040,11 +2040,13 @@ class Program
             string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
             string chapterTitlesPath = "talkfilebook_" + filename + ".docx";
             string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
+            string progressFileTxt = "progresscontroller.txt";
             string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
 
             string outputFilePath = appPath + chapterTitlesPath;
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            string outputFileProgressTxt = progressFileTxt;
             string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
 
             string getQuote, sQuote, imagePath, Simage;
@@ -2118,6 +2120,7 @@ class Program
                 }
             }
             HtmlGenerator.CreateHtmlDocument(outputFilePathHtml);
+            await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Starting");
 
             List<string> lines = new List<string>();
             string allBookTitles = "";
@@ -2170,6 +2173,9 @@ class Program
 
                 for (int i = 0; i < chapterCount; i++)
                 {
+                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
+                        + liness.ToString() + " of total:" + chapterCount.ToString());
+
                     int introLimit = chapterCount / 3;
                     int midLimit = (chapterCount * 2) / 3;
                     string chapterStage = "";
@@ -2377,12 +2383,15 @@ class Program
                     //await UpDateProgress.SendProgressAsync(liness);
                     liness += 1;
                     linessResponse += 1;
+                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
+                        + liness.ToString() + " of total:" + chapterCount.ToString());
                 }
 
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
                 string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
+                await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
             }
             catch (Exception ex)
             {

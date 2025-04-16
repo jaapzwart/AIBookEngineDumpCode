@@ -3340,7 +3340,28 @@ namespace Writeyourownbooktest
             }
         }
 
+        public static async Task WriteProgress(string outputFilePathPdf, string outputFileProgressTxt, string progressText)
+        {
+            if (File.Exists(outputFileProgressTxt))
+            {
+                Console.WriteLine("The progress file exists — deleting...");
+                GlobalMethods.deleteFileFromBlob(outputFileProgressTxt, "mindscriptedconfig");
+                File.Delete(outputFileProgressTxt);
+            }
+            else
+            {
+                Console.WriteLine("The progress file does NOT exist.");
+            }
 
+            // (Re)create the progress file
+            HtmlGenerator.CreateProgressDocument(outputFileProgressTxt, progressText);
+
+            // Read and upload to blob
+            byte[] txtBytes = File.ReadAllBytes(outputFileProgressTxt);
+            Console.WriteLine("After byte fill progress");
+            string resultProgress = await GlobalMethods.WritePdfToBlobAsync(txtBytes, outputFileProgressTxt, "mindscriptedconfig");
+
+        }
         public static string readFileFromBlob(string fileName, string blobber)
         {
             try
@@ -4274,7 +4295,18 @@ public static class HtmlGenerator
                 Console.WriteLine("HTML file already exists. Skipping head section.");
             }
         }
+        public static string CreateProgressDocument(string filename, string cContent)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("Progress file already exists. Skipping creation.");
+                return filename;
+            }
 
+            File.AppendAllText(filename, cContent + '\n', Encoding.UTF8);
+            Console.WriteLine("Progress document created successfully at: " + filename);
+            return filename;
+        }
         public static void AppendImageToHtml(string htmlFilePath, string imagePath)
         {
             string newContent = $@"
