@@ -2106,6 +2106,7 @@ class Program
                     }
                     catch (Exception ex)
                     {
+                        Console.WriteLine("Error reducing image:" + ex.Message);
                         Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
                         Simage = await GetDalleGood(makingImage + iimage);
                         if (Simage.Contains("Bad Request"))
