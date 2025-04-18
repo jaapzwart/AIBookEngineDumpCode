@@ -2173,6 +2173,7 @@ class Program
 
                 for (int i = 0; i < chapterCount; i++)
                 {
+                    sFore = "";
                     await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
                         + liness.ToString() + " of total:" + chapterCount.ToString());
 
@@ -2186,18 +2187,48 @@ class Program
                     if (_examples.Contains("dochtml"))
                     {
                         string foreRunning = "";
-                        string storylineSoFar = string.Join('\n', responseLines); // Full text of prior chapters
 
                         if (liness >= 1) // Not the first chapter
                         {
+                            //------------------------
+                            // Do the chapter stack
+                            //------------------------
+                            if (liness <= 16) // Build the first three previous chapters
+                            {
+                                responseLines.Add(getResponse);
+                                getResponseLiness = "";
+                                foreach (string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
+                            else // Place the last two chapters as first two and add last chapter as last
+                            {
+                                getResponseLiness = "";
+                                List<string> resTemp = new List<string>();
+                                foreach (string res in responseLines)
+                                {
+                                    resTemp.Add(res);
+                                }
+                                responseLines.Clear();
+                                for (int iR = 1; iR <= 15; iR++)
+                                {
+                                    responseLines.Add((string)resTemp[iR]);
+                                }
+                                responseLines.Add(getResponse);
+                                foreach (string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
                             foreRunning = GetPromptVars.SecondRunningPrompt;
 
                             // Enhanced prompt with full context and anti-repetition instruction
                             sFore += " " + foreRunning +
-                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as summarized here: '" + previousChapterSummary + "'" +
+                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'" +
                                      " and BUILDS FURTHER on these key events and themes without repeating specific actions, descriptions, or events (e.g., do not repeat scenes like standing before a doorway if already described)." +
-                                     " Incorporate the OVERALL STORYLINE so far: '" + overallPlotline + "' in a COHERENT way." +
-                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion, using the full context of prior chapters: '" + storylineSoFar + "' to avoid redundancy.";
+                                     " Incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "' in a COHERENT way." +
+                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion, using the full context of prior chapters.";
                         }
                         else // First chapter
                         {
@@ -2224,11 +2255,11 @@ class Program
                                 if (i == chapterCount - 1) // Final chapter
                                 {
                                     sFore += " Continue where the last chapter ended." +
-                                        "Conclude the story with a satisfying resolution. Address the main conflict: '" + overallPlotline + "', and bring character arcs to a logical and meaningful end. Ensure the ending aligns with the tone and structure of the overall narrative.";
+                                        "Conclude the story with a satisfying resolution. Address the main conflict and bring character arcs to a logical and meaningful end. Ensure the ending aligns with the tone and structure of the overall narrative.";
                                 }
                                 else
                                 {
-                                    sFore += " Continue where the last chapter ended." +
+                                    sFore += " Continue where the last chapter ended:" + responseLines.Last() +
                                         "Raise the tension and push the story toward its conclusion. Begin resolving subplots and highlight consequences of earlier actions. Prepare the stage for the final chapter by tightening the focus on the central narrative.";
                                 }
                                 break;
@@ -2244,9 +2275,9 @@ class Program
                         if (liness >= 1)
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on the previous chapter's key events: '" + previousChapterSummary
+                                "Create a good title in max 5 words based on the previous chapter's key events: '" + responseLines.Last()
                                 + " focussed on a possible next chapter.",
-                                "o3-mini");
+                                "o3-mini"); 
                         }
                         else
                         {
@@ -2262,10 +2293,10 @@ class Program
                         iimage = _translatedTitle;
                     }
 
-                    // Image generation
+                    sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+                    
                     if (doImage)
                     {
-                        sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
@@ -2275,7 +2306,7 @@ class Program
                             string TopImage = GetPromptVars.MainHtmlImageTop;
                             makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
                         }
-
+                        iimage = HtmlGenerator.EnsureJpgExtension(iimage);
                         Simage = await GetDalleGood(makingImage + iimage);
                         if (Simage.Contains("Bad Request"))
                         {
@@ -2294,6 +2325,7 @@ class Program
                             catch (Exception ex)
                             {
                                 Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
                                 Simage = await GetDalleGood(makingImage + iimage);
                                 if (Simage.Contains("Bad Request"))
                                 {
@@ -2307,12 +2339,15 @@ class Program
                     // Append to HTML
                     if (_examples.Contains("dochtml"))
                     {
-                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
-                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "MAIN Quoted text added successfully.", false);
+                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
                     }
 
-                    imagePath = appPath + sClean + ".jpg";
-                    HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
+                    if (doImage)
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath, false);
+                    }
                     getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
                     sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
@@ -2322,8 +2357,8 @@ class Program
                     else if (_AILanguage.Contains("nl"))
                         _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
                     getQuote = _translatedQuote;
-                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
-
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22, false);
+                    Console.WriteLine("Before getResponse...");
                     // Generate and store chapter content
                     if (_examples.Contains("dochtml"))
                     {
@@ -2332,53 +2367,45 @@ class Program
                         if (_AIProvider.Contains("o1"))
                             getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
                         else if (_AIProvider.Contains("o3-mini"))
+                        {
+                            int bBig = front.Length + sFore.Length;
+                            Console.WriteLine("Before ACTUALLY DOING getResponse..." + '\n' +
+                                "Responeselines count:" + responseLines.Count.ToString() + '\n' +
+                                "GetResponse total:" + getResponseLiness.Length.ToString() + '\n' +
+                                "front + sfore length:" + bBig.ToString());
+
                             getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini") + "\n\n";
-                        else if(_AIProvider.Contains("Google"))
+                            Console.WriteLine("After ACTUALLY DOING getResponse...");
+                        }
+                        else if (_AIProvider.Contains("Google"))
                             getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
-                        else if (_AIProvider.Contains("Grok"))
-                            getResponse = await LargeGPT.GetGrok(front + sFore) + "\n\n";
-
-                        responseLines.Add(getResponse); // Add to storyline history
-
-                        // Generate a concise summary of this chapter’s key plot points
-                        if (_AIProvider.Contains("o1"))
-                            previousChapterSummary = await LargeGPT.CallLargeChatGPT(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
-                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
-                                "o1");
-                        else if (_AIProvider.Contains("o3-mini"))
-                            previousChapterSummary = await LargeGPT.CallLargeChatGPT(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, " +
-                                "focusing on the most significant details without repeating verbatim text: '" + getResponse + "'",
-                                "o3-mini");
-                        else if(_AIProvider.Contains("Google"))
-                            previousChapterSummary = await LargeGPT.GetGoogleLarge(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
-                        else if (_AIProvider.Contains("Grok"))
-                            previousChapterSummary = await LargeGPT.GetGrok(
-                                "Summarize the key plot events, themes, and developments of this chapter in 3 paragraphs, focusing on the most significant details without repeating verbatim text: '" + getResponse + "'");
-
-                        // Update overallPlotline with the summary
-                        overallPlotline += " " + previousChapterSummary;
+                        else if (_AIProvider.Contains("grok-3-beta") || _AIProvider.Contains("grok-3-mini-beta"))
+                            getResponse = await LargeGPT.GetGrok("Return only the content of the chapter:" + 
+                                front + sFore, _AIProvider) + "\n\n";
 
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
+                        Console.WriteLine("Before translating sQuote");
                         if (_AILanguage.Contains("xxx"))
                             _translatedQuote = sQuote;
                         else if (_AILanguage.Contains("nl"))
-                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
                         sQuote = _translatedQuote;
+                        Console.WriteLine("After translating getQuote");
 
-                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
-
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22, false);
+                        Console.WriteLine("Before translating getResponse");
                         string _translatedText = "";
                         if (_AILanguage.Contains("xxx"))
                             _translatedText = getResponse;
                         else if (_AILanguage.Contains("nl"))
                             _translatedText = await Writeyourownbooktest.Translator.TranslateTextToGiven(getResponse, _AILanguage);
+
+                        Console.WriteLine("After translating getResponse");
                         HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
                                 _translatedText, "Arial", 14);
+                        Console.WriteLine("After ADDING translated getResponse to the document.");
                     }
                     //await UpDateProgress.SendProgressAsync(liness);
                     liness += 1;
@@ -2390,8 +2417,9 @@ class Program
                 ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
                 string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
-                Console.WriteLine("PDF upload to Blob:" + result);
                 await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
+                Console.WriteLine("PDF upload to Blob:" + result);
+                
             }
             catch (Exception ex)
             {

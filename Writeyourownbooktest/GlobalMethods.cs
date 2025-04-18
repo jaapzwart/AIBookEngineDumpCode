@@ -4009,7 +4009,7 @@ namespace Writeyourownbooktest
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
         }
-        public static async Task<string> GetGrok(string question)
+        public static async Task<string> GetGrok(string question, string modell)
         {
             string resultGrok = "";
             // Your API key and base URL 
@@ -4024,7 +4024,7 @@ namespace Writeyourownbooktest
                 // Define the request body 
                 var requestBody = new
                 {
-                    model = "grok-3-mini-beta",
+                    model = modell,
                     messages = new[]
                     {
                     new { role = "system", content = Secrets.GrokRole },
@@ -4259,6 +4259,15 @@ namespace Writeyourownbooktest
 
 public static class HtmlGenerator
     {
+        public static string EnsureJpgExtension(string fileName)
+        {
+            if (!fileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+            {
+                fileName = fileName.TrimEnd().TrimEnd('.', ' ');
+                fileName += ".jpg";
+            }
+            return fileName;
+        }
         public static void WriteHtmlHead(string htmlFilePath)
         {
             string htmlHead = @"<!DOCTYPE html>
@@ -4307,36 +4316,45 @@ public static class HtmlGenerator
             Console.WriteLine("Progress document created successfully at: " + filename);
             return filename;
         }
-        public static void AppendImageToHtml(string htmlFilePath, string imagePath)
+        public static void AppendImageToHtml(string htmlFilePath, string imagePath, bool TOC = false)
         {
             string newContent = $@"
                 <center><div class=""image-container"">
                     <img src=""{imagePath}"" alt=""Inserted Image"">
                 </div></center>";
 
-            AppendToBody(htmlFilePath, newContent, "Image HTML snippet appended successfully.");
+            AppendToBody(htmlFilePath, newContent, "Image HTML snippet appended successfully.", TOC);
         }
 
         public static void InsertQuotedText(string filePath, string quoteText, bool pageBreak, bool italic,
                                             string colorBackground, bool _borders, string textColor,
-                                            string fontType = "Garamond", int fontSize = 16)
+                                            string fontType = "Garamond", int fontSize = 16, bool TOC = true)
         {
-            string fontStyle = italic ? "font-style: italic;" : "";
-            string borderStyle = _borders ? $"border: 2px solid {textColor};" : "";
-            string backgroundColor = !string.IsNullOrEmpty(colorBackground) ? $"background-color: {colorBackground};" : "";
-            string textColorStyle = $"color: {textColor};";
-            string fontSizeStyle = $"font-size: {fontSize}px;";
-            string fontFamily = $"font-family: '{fontType}', serif;";
+            try
+            {
+                string fontStyle = italic ? "font-style: italic;" : "";
+                string borderStyle = _borders ? $"border: 2px solid {textColor};" : "";
+                string backgroundColor = !string.IsNullOrEmpty(colorBackground) ? $"background-color: {colorBackground};" : "";
+                string textColorStyle = $"color: {textColor};";
+                string fontSizeStyle = $"font-size: {fontSize}px;";
+                string fontFamily = $"font-family: '{fontType}', serif;";
 
-            string quoteHtml = $@"
+                string quoteHtml = $@"
                 <div style=""text-align: center; {borderStyle} {backgroundColor} padding: 10px; margin: 20px auto; width: 80%;"">
                     <p style=""{fontFamily} {fontSizeStyle} {fontStyle} {textColorStyle} margin: 0;"">{quoteText}</p>
                 </div>";
 
-            if (pageBreak)
-                quoteHtml += "<div style='page-break-after: always;'></div>";
-
-            AppendToBody(filePath, quoteHtml, "Quoted text added successfully.");
+                if (pageBreak)
+                    quoteHtml += "<div style='page-break-after: always;'></div>";
+                Console.WriteLine("BEFORE ADDING QUOTED TEXT:" + quoteHtml + '\n' +
+                    "FILEPATH:" + filePath);
+                AppendToBody(filePath, quoteHtml, "SUB Quoted text added successfully.", TOC);
+                Console.WriteLine("Right AFTER ADDING SUB QUOTE");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("ERROR ADDING QUOTE:" + ex.ToString());
+            }
         }
 
         public static void AppendBoldTextToHtml(string filePath, string text, bool pageBreak,
@@ -4418,7 +4436,11 @@ public static class HtmlGenerator
             string firstPageInit = GetPromptVars.FirstPageInitiation;
             string bookTitle = GetPromptVars.TitleBook;
             string headerTitle = GetPromptVars.MainHeaderTitleOfBook;
-            
+
+            string baseDir = AppContext.BaseDirectory;
+            string fullImagePath = System.IO.Path.Combine(baseDir, $"{imagePath}.jpg").Replace("\\", "/"); // Use forward slashes for HTML
+
+
             string emptyHtmlContent = $@"
             <!DOCTYPE html>
             <html lang=""en"">
@@ -4501,7 +4523,7 @@ public static class HtmlGenerator
                 <h1>{headerTitle}</h1> 
                 <h2>{bookTitle}</h2>
                 <div class=""image-container"">
-                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">
+                    <img src=""{fullImagePath}"" alt=""Inserted Image"">
                 </div>
             </center>
             <div style='page-break-after: always;'></div>
@@ -4524,45 +4546,48 @@ public static class HtmlGenerator
         }
         public static List<string> tocTitles = new List<string>();
         public static string tocHead = "\n<div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div>\n";
-        public static void AppendToBody(string filePath, string contentToAdd, string successMessage)
+        public static void AppendToBody(string filePath, string contentToAdd, string successMessage, bool TOC = true)
         {
             if (!File.Exists(filePath)) return;
 
             string htmlContent = File.ReadAllText(filePath, Encoding.UTF8);
 
-            // Find the position of the text-container div
-            int textContainerIndex = htmlContent.IndexOf("<div class='text-container'>", StringComparison.OrdinalIgnoreCase);
-            if (textContainerIndex != -1)
+            if (TOC)
             {
-                int tocIndex = htmlContent.IndexOf("<div id=\"toc\">", StringComparison.OrdinalIgnoreCase);
-                if (tocIndex == -1)
+                // Find the position of the text-container div
+                int textContainerIndex = htmlContent.IndexOf("<div class='text-container'>", StringComparison.OrdinalIgnoreCase);
+                if (textContainerIndex != -1)
                 {
-                    // Insert TOC before the text-container div
-                    htmlContent = htmlContent.Insert(textContainerIndex, "\n" +
-                        "<div class='text-container'><div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div></div>\n");
-                }
-            }
-
-            // Process H1 tags for TOC (handling inline styles)
-            var matches = Regex.Matches(contentToAdd, "<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            foreach (Match match in matches)
-            {
-                string headingText = Regex.Replace(match.Groups[1].Value, "<.*?>", "").Trim(); // Remove inner HTML tags
-                string anchorId = Regex.Replace(headingText, "[^a-zA-Z0-9]", "_").ToLower();
-                string anchorTag = $"<h1 id=\"{anchorId}\" {match.Value.Substring(3)}";
-
-                // Replace original H1 with anchored version
-                contentToAdd = contentToAdd.Replace(match.Value, anchorTag);
-
-                // Add TOC entry
-                string tocEntry = $"<li><a href=\"#{anchorId}\">{headingText}</a></li>";
-                int tocListIndex = htmlContent.IndexOf("<div id=\"toc\"><h2>Table of Contents</h2><ul>", StringComparison.OrdinalIgnoreCase);
-                if (tocListIndex != -1)
-                {
-                    int ulEndIndex = htmlContent.IndexOf("</ul>", tocListIndex, StringComparison.OrdinalIgnoreCase);
-                    if (ulEndIndex != -1)
+                    int tocIndex = htmlContent.IndexOf("<div id=\"toc\">", StringComparison.OrdinalIgnoreCase);
+                    if (tocIndex == -1)
                     {
-                        htmlContent = htmlContent.Insert(ulEndIndex, tocEntry + "\n");
+                        // Insert TOC before the text-container div
+                        htmlContent = htmlContent.Insert(textContainerIndex, "\n" +
+                            "<div class='text-container'><div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div></div>\n");
+                    }
+                }
+
+                // Process H1 tags for TOC (handling inline styles)
+                var matches = Regex.Matches(contentToAdd, "<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                foreach (Match match in matches)
+                {
+                    string headingText = Regex.Replace(match.Groups[1].Value, "<.*?>", "").Trim(); // Remove inner HTML tags
+                    string anchorId = Regex.Replace(headingText, "[^a-zA-Z0-9]", "_").ToLower();
+                    string anchorTag = $"<h1 id=\"{anchorId}\" {match.Value.Substring(3)}";
+
+                    // Replace original H1 with anchored version
+                    contentToAdd = contentToAdd.Replace(match.Value, anchorTag);
+
+                    // Add TOC entry
+                    string tocEntry = $"<li><a href=\"#{anchorId}\">{headingText}</a></li>";
+                    int tocListIndex = htmlContent.IndexOf("<div id=\"toc\"><h2>Table of Contents</h2><ul>", StringComparison.OrdinalIgnoreCase);
+                    if (tocListIndex != -1)
+                    {
+                        int ulEndIndex = htmlContent.IndexOf("</ul>", tocListIndex, StringComparison.OrdinalIgnoreCase);
+                        if (ulEndIndex != -1)
+                        {
+                            htmlContent = htmlContent.Insert(ulEndIndex, tocEntry + "\n");
+                        }
                     }
                 }
             }
