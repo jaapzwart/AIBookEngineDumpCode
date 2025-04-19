@@ -4059,7 +4059,7 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
-        public static async Task<string> GetGoogleLarge(string textToTranslate)
+        public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
         {
             string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
             try
@@ -4082,14 +4082,23 @@ namespace Writeyourownbooktest
                 Console.WriteLine("Access Token retrieved successfully");
 
                 // 3. Prepare the Request
-                string question = textToTranslate ?? "Default prompt: Tell me about stars."; // Fallback if null
+                string prompt = textToTranslate ?? "Tell me about stars.";
+                string question = $"Please answer the following in {answerLanguage}: {prompt}";
                 Console.WriteLine($"Input Question: {question}");
+
                 var requestData = new
                 {
                     contents = new[]
                     {
-                    new { role = "user", parts = new[] { new { text = question } } }
-                },
+                new
+                {
+                    role = "user",
+                    parts = new[]
+                    {
+                        new { text = question }
+                    }
+                }
+            },
                     generationConfig = new
                     {
                         temperature = 0.4,
@@ -4098,6 +4107,7 @@ namespace Writeyourownbooktest
                         topK = 40
                     }
                 };
+
                 string jsonContent = JsonConvert.SerializeObject(requestData);
                 Console.WriteLine($"Request JSON: {jsonContent}");
 
@@ -4111,7 +4121,6 @@ namespace Writeyourownbooktest
                     Console.WriteLine($"Raw API Response: {result}");
                     Console.WriteLine($"HTTP Status Code: {response.StatusCode}");
 
-                    // Check if the response was successful
                     if (!response.IsSuccessStatusCode)
                     {
                         throw new Exception($"API request failed with status {response.StatusCode}: {result}");
@@ -4136,8 +4145,8 @@ namespace Writeyourownbooktest
                 Console.WriteLine($"Exception: {ex.Message}");
                 return $"Error: {ex.Message}";
             }
-
         }
+
         public class ResponseData
         {
             public Candidate[] Candidates { get; set; }
@@ -4261,13 +4270,18 @@ public static class HtmlGenerator
     {
         public static string EnsureJpgExtension(string fileName)
         {
-            if (!fileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+            fileName = fileName.TrimEnd().TrimEnd('.', ' ');
+
+            // Remove any extra dots before the extension
+            int lastDotIndex = fileName.LastIndexOf('.');
+            if (lastDotIndex != -1)
             {
-                fileName = fileName.TrimEnd().TrimEnd('.', ' ');
-                fileName += ".jpg";
+                fileName = fileName.Substring(0, lastDotIndex);
             }
-            return fileName;
+
+            return fileName + ".jpg";
         }
+
         public static void WriteHtmlHead(string htmlFilePath)
         {
             string htmlHead = @"<!DOCTYPE html>

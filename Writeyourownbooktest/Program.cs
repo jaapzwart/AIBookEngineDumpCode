@@ -2159,6 +2159,7 @@ class Program
                 int linessResponse = 0;
                 string getResponseLiness = "";
                 List<string> responseLines = new List<string>(); // To store all chapters so far
+                List<string> chaptersSoFar = new List<string>(); // To make sure the titles are different from each other.
                 string getResponse = "";
                 string sFore = "";
                 string previousChapterSummary = ""; // To store a concise summary of the previous chapter
@@ -2225,17 +2226,21 @@ class Program
 
                             // Enhanced prompt with full context and anti-repetition instruction
                             sFore += " " + foreRunning +
-                                     " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'" +
-                                     " and BUILDS FURTHER on these key events and themes without repeating specific actions, descriptions, or events (e.g., do not repeat scenes like standing before a doorway if already described)." +
-                                     " Incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "' in a COHERENT way." +
-                                     " Ensure the chapter advances the narrative logically toward a satisfying conclusion, using the full context of prior chapters.";
+                                 " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
+                                 " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
+                                 " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
+                                 " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
+                                 " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
                         }
                         else // First chapter
                         {
                             foreRunning = GetPromptVars.FirstForePrompt;
                             sFore += " " + foreRunning +
-                                     " Begin the story with an elaborative long chapter based on the initial plotline: '" + GetPromptVars.BookPlotLine + "'." +
-                                     " Set up the world, protagonist, and initial tension to establish a strong foundation for a complete story arc.";
+                                     " Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + GetPromptVars.BookPlotLine + "'." +
+                                     " Use this opening not merely as a starting point, but as a threshold—introducing the world, the protagonist, and the first sparks of tension that hint at larger forces at play." +
+                                     " Allow the narrative to unfold with a dynamic structure, unconstrained by a strict chronological order—play with time through memories, visions, or foreshadowing to weave a layered introduction." +
+                                     " This chapter should not resolve key plotlines, but rather ignite curiosity and lay the emotional and thematic groundwork for the journey ahead.";
+
                         }
 
                         // Stage-specific instructions to guide the story arc
@@ -2269,20 +2274,49 @@ class Program
                         sFore += " " + ExtraCatch;
                     }
 
+                    string front = "";
+                    front += "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
+
+                    if (_AIProvider.Contains("o1"))
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                    else if (_AIProvider.Contains("o3-mini"))
+                    {
+                        int bBig = front.Length + sFore.Length;
+                        Console.WriteLine("Before ACTUALLY DOING getResponse..." + '\n' +
+                            "Responeselines count:" + responseLines.Count.ToString() + '\n' +
+                            "GetResponse total:" + getResponseLiness.Length.ToString() + '\n' +
+                            "front + sfore length:" + bBig.ToString());
+
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini") + "\n\n";
+                        Console.WriteLine("After ACTUALLY DOING getResponse...");
+                    }
+                    else if (_AIProvider.Contains("Google"))
+                    {
+                        if(_AILanguage.Contains("nl"))
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "Dutch") + "\n\n";
+                        else if (_AILanguage.Contains("de"))
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "German") + "\n\n";
+                        else
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
+                    }
+                    else if (_AIProvider.Contains("grok-3-beta") || _AIProvider.Contains("grok-3-mini-beta"))
+                        getResponse = await LargeGPT.GetGrok("Return only the content of the chapter:" +
+                            front + sFore, _AIProvider) + "\n\n";
+
                     // Generate chapter title based on the evolving plot
                     if (_examples.Contains("dochtml"))
                     {
                         if (liness >= 1)
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on the previous chapter's key events: '" + responseLines.Last()
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on thr esence of this chapter '" + getResponse
                                 + " focussed on a possible next chapter.",
                                 "o3-mini"); 
                         }
                         else
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
-                                "Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars.BookPlotLine + "'",
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars.BookPlotLine + "'",
                                 "o3-mini");
                         }
                         string _translatedTitle = "";
@@ -2306,13 +2340,33 @@ class Program
                             string TopImage = GetPromptVars.MainHtmlImageTop;
                             makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
                         }
-                        iimage = HtmlGenerator.EnsureJpgExtension(iimage);
-                        Simage = await GetDalleGood(makingImage + iimage);
-                        if (Simage.Contains("Bad Request"))
+                        Simage = "";
+                        success = false;
+                        while (!success)
                         {
-                            Simage = await GetDalleGood(makingImage + sQuote);
+                            try
+                            {
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + sQuote);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                                success = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + iimage);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                            }
                         }
-                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
 
                         success = false;
                         while (!success)
@@ -2358,31 +2412,11 @@ class Program
                         _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
                     getQuote = _translatedQuote;
                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22, false);
+                    
                     Console.WriteLine("Before getResponse...");
                     // Generate and store chapter content
                     if (_examples.Contains("dochtml"))
                     {
-                        string front = "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
-
-                        if (_AIProvider.Contains("o1"))
-                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
-                        else if (_AIProvider.Contains("o3-mini"))
-                        {
-                            int bBig = front.Length + sFore.Length;
-                            Console.WriteLine("Before ACTUALLY DOING getResponse..." + '\n' +
-                                "Responeselines count:" + responseLines.Count.ToString() + '\n' +
-                                "GetResponse total:" + getResponseLiness.Length.ToString() + '\n' +
-                                "front + sfore length:" + bBig.ToString());
-
-                            getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini") + "\n\n";
-                            Console.WriteLine("After ACTUALLY DOING getResponse...");
-                        }
-                        else if (_AIProvider.Contains("Google"))
-                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
-                        else if (_AIProvider.Contains("grok-3-beta") || _AIProvider.Contains("grok-3-mini-beta"))
-                            getResponse = await LargeGPT.GetGrok("Return only the content of the chapter:" + 
-                                front + sFore, _AIProvider) + "\n\n";
-
                         getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
@@ -2395,19 +2429,11 @@ class Program
                         Console.WriteLine("After translating getQuote");
 
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22, false);
-                        Console.WriteLine("Before translating getResponse");
-                        string _translatedText = "";
-                        if (_AILanguage.Contains("xxx"))
-                            _translatedText = getResponse;
-                        else if (_AILanguage.Contains("nl"))
-                            _translatedText = await Writeyourownbooktest.Translator.TranslateTextToGiven(getResponse, _AILanguage);
-
-                        Console.WriteLine("After translating getResponse");
+                        
                         HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
-                                _translatedText, "Arial", 14);
+                                getResponse, "Arial", 14);
                         Console.WriteLine("After ADDING translated getResponse to the document.");
                     }
-                    //await UpDateProgress.SendProgressAsync(liness);
                     liness += 1;
                     linessResponse += 1;
                     await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
