@@ -4083,7 +4083,8 @@ namespace Writeyourownbooktest
 
                 // 3. Prepare the Request
                 string prompt = textToTranslate ?? "Tell me about stars.";
-                string question = $"Please answer the following in {answerLanguage}: {prompt}";
+                string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs." +
+                    $"Please answer the following in {answerLanguage}: {prompt}";
                 Console.WriteLine($"Input Question: {question}");
 
                 var requestData = new
@@ -4463,7 +4464,11 @@ public static class HtmlGenerator
                 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
                 <title>{bookTitle}</title>
                 <style>
-                    p, table, ul, li {{
+                    p {{ 
+                        font-size: 16pt;
+                        line-height: 1.5;
+                    }}
+                    table, ul, li {{
                         font-family: 'Arial', sans-serif;
                         font-size: 14px;
                         color: #000;
@@ -4678,26 +4683,7 @@ public static class HtmlGenerator
 
             Console.WriteLine("PDF created successfully.");
         }
-        public static void ConvertToPdf_IronPdf(string html, string pdf)
-        {
-            // Path to your HTML file
-            string htmlFilePath = html;
-            string pdfPath = pdf;
 
-            // Read the HTML content from file
-            string htmlContent = File.ReadAllText(htmlFilePath);
-
-            // Create the renderer
-            var renderer = new HtmlToPdf();
-
-            // Convert the HTML to PDF
-            var pdfIron = renderer.RenderHtmlAsPdf(htmlContent);
-
-            // Save the PDF
-            pdfIron.SaveAs(pdfPath);
-
-            Console.WriteLine("Iron PDF created from HTML file.");
-        }
         public static void ConvertToPdf_Dink(string html, string pdf, string _baseUrl)
         {
             // Path to your HTML file
@@ -4892,6 +4878,36 @@ public static class HtmlGenerator
             /// A string representing the translated text.
             /// </value>
             public string Text { get; set; }
+        }
+    }
+    public static class HtmlToPdfGeneratorDinky
+    {
+        private static readonly IConverter _converter = new SynchronizedConverter(new PdfTools());
+
+        public static void ConvertHtmlToPdf(string html, string outputPath)
+        {
+            var doc = new HtmlToPdfDocument()
+            {
+                GlobalSettings = {
+                PaperSize = PaperKind.A4,
+                Orientation = DinkToPdf.Orientation.Portrait,
+                Out = outputPath,
+                Margins = new MarginSettings { Top = 25, Bottom = 25, Left = 25, Right = 25 } // in millimeters
+    
+            },
+                Objects = {
+                new ObjectSettings()
+                {
+                    HtmlContent = html,
+                    WebSettings = {
+                        DefaultEncoding = "utf-8",
+                        LoadImages = true
+                    }
+                }
+            }
+            };
+
+            _converter.Convert(doc);
         }
     }
 

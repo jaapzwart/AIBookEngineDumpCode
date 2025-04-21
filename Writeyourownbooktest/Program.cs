@@ -89,6 +89,7 @@ using OpenXmlPowerTools.HtmlToWml.CSS;
 using OpenXmlPowerTools;
 using PdfSharp.Pdf.Content.Objects;
 using NAudio.CoreAudioApi;
+using Microsoft.Extensions.Azure;
 
 
 
@@ -2308,10 +2309,18 @@ class Program
                     {
                         if (liness >= 1)
                         {
-                            iimage = await LargeGPT.CallLargeChatGPT(
-                                "Make sure the title starts with a capital. Create a good title in max 5 words based on thr esence of this chapter '" + getResponse
+                            bool tExists = true;
+                            while(tExists)
+                            {
+                                iimage = await LargeGPT.CallLargeChatGPT(
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on the esence of this chapter '" + getResponse
                                 + " focussed on a possible next chapter.",
-                                "o3-mini"); 
+                                "o3-mini");
+                                tExists = chaptersSoFar.Contains(iimage);
+                            }
+                            chaptersSoFar.Add(iimage);
+                            
+
                         }
                         else
                         {
@@ -2393,7 +2402,8 @@ class Program
                     // Append to HTML
                     if (_examples.Contains("dochtml"))
                     {
-                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "MAIN Quoted text added successfully.", false);
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", 
+                            "MAIN Quoted text added successfully.", false);
                         HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
                     }
 
@@ -2411,7 +2421,7 @@ class Program
                     else if (_AILanguage.Contains("nl"))
                         _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
                     getQuote = _translatedQuote;
-                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22, false);
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 28, false);
                     
                     Console.WriteLine("Before getResponse...");
                     // Generate and store chapter content
@@ -2428,10 +2438,10 @@ class Program
                         sQuote = _translatedQuote;
                         Console.WriteLine("After translating getQuote");
 
-                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22, false);
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 28, false);
                         
                         HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
-                                getResponse, "Arial", 14);
+                                getResponse, "Arial", 16);
                         Console.WriteLine("After ADDING translated getResponse to the document.");
                     }
                     liness += 1;
@@ -2439,8 +2449,9 @@ class Program
                     await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
                         + liness.ToString() + " of total:" + chapterCount.ToString());
                 }
-
-                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                string htmlContent = File.ReadAllText(outputFilePathHtml);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
                 string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
                 await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
@@ -2474,23 +2485,38 @@ class Program
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             // Create the Word document
-            string chapterTitlesPathHtml = "Perry rhodan the shadow fractal" + ".html";
-            string chapterTitlesPathPdf = "Perry rhodan the shadow fractal" + ".pdf";
+            string chapterTitlesPathHtml = "talkfilebook_20250420185325911" + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_20250420185325911_1" + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
-                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, "");
                 Console.WriteLine("Pdf converted, starting the upload to blob");
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - NC 1 - 1.The Shadow Fractal.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "MEDIEVAL tester 1.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+        else if (args[0] != null && args[0].Contains("DinkyPdf"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            // Create the Word document
+            string chapterTitlesPathHtml = "talkfilebook_20250420185325911" + ".html";
+            string chapterTitlesPathPdf = "Dinky1" + ".pdf";
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+
+            string htmlContent = File.ReadAllText(outputFilePathHtml);
+
+            HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
+            Console.WriteLine("PDF created successfully.");
         }
         // "talk" "subject" "US" 0.85 3
         // "talkfile" (reads the file Filetalk.txt) and saves output to a file.

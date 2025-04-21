@@ -21,6 +21,9 @@
     <PackageReference Include="HtmlRendererCore.PdfSharp" Version="1.0.5" />
     <PackageReference Include="HuggingFace" Version="0.2.4" />
     <PackageReference Include="IronPdf" Version="2025.3.6" />
+    <PackageReference Include="itext" Version="9.1.0" />
+    <PackageReference Include="LibWkHtmlToX-32" Version="0.12.6.1" />
+    <PackageReference Include="libwkhtmltox-64" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Azure.CognitiveServices.Language.LUIS.Runtime" Version="3.0.0" />
     <PackageReference Include="Microsoft.Azure.CognitiveServices.Language.TextAnalytics" Version="4.0.0" />
