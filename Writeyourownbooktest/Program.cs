@@ -2309,24 +2309,25 @@ class Program
                     {
                         if (liness >= 1)
                         {
-                            bool tExists = true;
-                            while(tExists)
-                            {
-                                iimage = await LargeGPT.CallLargeChatGPT(
-                                "Make sure the title starts with a capital. Create a good title in max 5 words based on the esence of this chapter '" + getResponse
-                                + " focussed on a possible next chapter.",
-                                "o3-mini");
-                                tExists = chaptersSoFar.Contains(iimage);
-                            }
-                            chaptersSoFar.Add(iimage);
-                            
+                            // Generate title and check for similarity
+                            string getChapters = "";
+                            foreach (var gC in chaptersSoFar)
+                                getChapters += gC + '\n';
 
+                            iimage = await LargeGPT.CallLargeChatGPT(
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on the essence of this chapter: '" + getResponse +
+                                "' but make the title totally different from any chapter names in: " + getChapters + " while sticking to the essence of current chapter as was given" +
+                                " but buiding further on the storyline.",
+                                "o3-mini");
+
+                            chaptersSoFar.Add(iimage); // Optional: add it to your list to avoid future duplicates
                         }
                         else
                         {
                             iimage = await LargeGPT.CallLargeChatGPT(
                                 "Make sure the title starts with a capital. Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars.BookPlotLine + "'",
                                 "o3-mini");
+                            chaptersSoFar.Add(iimage);
                         }
                         string _translatedTitle = "";
                         if (_AILanguage.Contains("xxx"))
@@ -2419,9 +2420,9 @@ class Program
                     if (_AILanguage.Contains("xxx"))
                         _translatedQuote = getQuote;
                     else if (_AILanguage.Contains("nl"))
-                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
-                    getQuote = _translatedQuote;
-                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 28, false);
+                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                    sQuote = _translatedQuote;
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, true, true, "white", false, "black", "Garamond", 28, false);
                     
                     Console.WriteLine("Before getResponse...");
                     // Generate and store chapter content
@@ -2434,7 +2435,7 @@ class Program
                         if (_AILanguage.Contains("xxx"))
                             _translatedQuote = sQuote;
                         else if (_AILanguage.Contains("nl"))
-                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(getQuote, _AILanguage);
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
                         sQuote = _translatedQuote;
                         Console.WriteLine("After translating getQuote");
 
@@ -2467,13 +2468,13 @@ class Program
         else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string chapterTitlesPathPdf = "MEDIEVAL - Isaac Newton Universe - The Apple and the Infinite - Newtons Journey to the Principia v1.1_O1_EN" + ".pdf";
+            string chapterTitlesPathPdf = "talkfilebook_20250421223330614" + ".pdf";
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "MEDIEVAL - Isaac Newton Universe - The Apple and the Infinite - Newtons Journey to the Principia v1.1_O1_EN.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "Medieval - NL - The Crescent and the Cross I - The Reckoning of Jacob de Graaff.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
@@ -2485,18 +2486,20 @@ class Program
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             // Create the Word document
-            string chapterTitlesPathHtml = "talkfilebook_20250420185325911" + ".html";
-            string chapterTitlesPathPdf = "talkfilebook_20250420185325911_1" + ".pdf";
+            string chapterTitlesPathHtml = "talkfilebook_20250421223330614" + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_20250421223330614_1" + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
-                ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, "");
+                //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, "");
+                string htmlContent = File.ReadAllText(outputFilePathHtml);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
                 Console.WriteLine("Pdf converted, starting the upload to blob");
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "MEDIEVAL tester 1.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "Medieval - NL - The Crescent and the Cross I - The Reckoning of Jacob de Graaff.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch(Exception ex)
