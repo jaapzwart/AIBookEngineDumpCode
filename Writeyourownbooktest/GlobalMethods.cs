@@ -3413,6 +3413,76 @@ namespace Writeyourownbooktest
                 return ex.Message;
             }
         }
+        public static string FormatAsCSharpString(string rawSummary)
+        {
+            var paragraphs = rawSummary.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("string summary_ =");
+
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                string escaped = paragraphs[i].Replace("\"", "\\\""); // Escape quotes
+                sb.Append($"    \"{escaped}");
+
+                if (i < paragraphs.Length - 1)
+                    sb.Append("\\n\\n\" +\n");
+                else
+                    sb.Append("\";");
+            }
+
+            return sb.ToString();
+        }
+        public static async Task<string> WriteFileToBlobAsync(string content, string fileName, string containerName)
+        {
+            try
+            {
+                string connectionString = Secrets.cloudStorageConnString;
+                var account = CloudStorageAccount.Parse(connectionString);
+                var blobClient = account.CreateCloudBlobClient();
+
+                // Get reference to the container and ensure it exists
+                var container = blobClient.GetContainerReference(containerName);
+                await container.CreateIfNotExistsAsync();
+
+                // Get reference to the blob and upload the content
+                var blockBlob = container.GetBlockBlobReference(fileName);
+                await blockBlob.UploadTextAsync(content);
+
+                return "Success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+        public static async Task<string> UploadPdfToBlobAsync(string filePath, string fileName, string containerName)
+        {
+            try
+            {
+                string connectionString = Secrets.cloudStorageConnString;
+                var account = CloudStorageAccount.Parse(connectionString);
+                var blobClient = account.CreateCloudBlobClient();
+
+                // Ensure the container exists
+                var container = blobClient.GetContainerReference(containerName);
+                await container.CreateIfNotExistsAsync();
+
+                // Get a reference to the blob and upload the file
+                var blockBlob = container.GetBlockBlobReference(fileName);
+                using (var fileStream = File.OpenRead(filePath))
+                {
+                    await blockBlob.UploadFromStreamAsync(fileStream);
+                }
+
+                return "Success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+
         public static async Task<string> WritePdfToBlobAsync(byte[] pdfBytes, string fileName, string containername)
         {
             try
@@ -4296,7 +4366,7 @@ namespace Writeyourownbooktest
         }
     }
 
-public static class HtmlGenerator
+    public static class HtmlGenerator
     {
         public static string EnsureJpgExtension(string fileName)
         {
@@ -4432,7 +4502,7 @@ public static class HtmlGenerator
         }
 
         public static void AppendTextToHtmlDocument(string filePath, string textToSynthesize,
-                                                    string fontType = "Old English Text MT", double fontSize = 14.5)
+                                                    string fontType = "Old English Text MT", double fontSize = 14.5, bool TOC = true)
         {
             string[] paragraphs = textToSynthesize.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
 
@@ -4448,7 +4518,7 @@ public static class HtmlGenerator
                 }
             }
 
-            AppendToBody(filePath, formattedText.ToString(), "Formatted text added successfully.");
+            AppendToBody(filePath, formattedText.ToString(), "Formatted text added successfully.", TOC);
         }
 
         public static void AppendClosingHtmlTags(string filePath)
@@ -4590,6 +4660,122 @@ public static class HtmlGenerator
 
             File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
             Console.WriteLine("HTML document created successfully at: " + filename);
+            return filename;
+        }
+        public static string CreateHtmlDocumentSummary(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("HTML file already exists. Skipping creation.");
+                return filename;
+            }
+            string baseDir = AppContext.BaseDirectory;
+            string imagePath = baseDir + "summary.gif"; // Without .jpg
+            string firstPageInit = GetPromptVars.FirstPageInitiation;
+            string bookTitle = GetPromptVars.TitleBook;
+            string headerTitle = GetPromptVars.MainHeaderTitleOfBook;
+
+            string fullImagePath = System.IO.Path.Combine(baseDir, $"{imagePath}.jpg").Replace("\\", "/"); // Use forward slashes for HTML
+
+
+            string emptyHtmlContent = $@"
+            <!DOCTYPE html>
+            <html lang=""en"">
+            <head>
+                <meta charset=""UTF-8"">
+                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                <title>{bookTitle}</title>
+                <style>
+                    p {{ 
+                        font-size: 16pt;
+                        line-height: 1.5;
+                    }}
+                    table, ul, li {{
+                        font-family: 'Arial', sans-serif;
+                        font-size: 14px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    ul {{
+                        font-size: 12px;
+                    }}
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 16px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .text-container {{
+                        width: 95%;
+                        margin: auto;
+                        margin-bottom: 40mm;
+                        padding: 2px;
+                        font-family: Arial, sans-serif;
+                        font-size: 12pt;
+                        line-height: 1.5;
+                        text-align: justify;
+                    }}
+                    .a4-page {{
+                        width: 210mm;
+                        height: 297mm;
+                        max-width: 210mm;
+                        aspect-ratio: 210 / 297;
+                        margin: auto;
+                        padding: 5mm 5mm 20mm 5mm;
+                        background: white;
+                        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                    }}
+                    @media print {{
+                        body {{
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .a4-page {{
+                            width: 210mm;
+                            height: 297mm;
+                            max-width: 210mm;
+                            aspect-ratio: 210 / 297;
+                            margin: auto;
+                            padding: 5mm 5mm 20mm 5mm;
+                            box-shadow: none;
+                        }}
+                    }}
+                    .image-container {{
+                        text-align: center;
+                        margin: 10px auto;
+                        border: 1px solid black;
+                        display: inline-block;
+                        padding: 6px;
+                    }}
+                    .image-container img {{
+                        max-width: 100%;
+                        height: auto;
+                    }}
+                </style>
+            </head>
+            <body>
+            <center>
+                <h1>{headerTitle}</h1> 
+                <h2>{bookTitle}</h2>
+                <div class=""image-container"">
+                    <img src=""{imagePath}"" alt=""Inserted Image"">
+                </div>
+            </center>
+            
+            <div class='text-container'>
+       
+            </div>
+            </body>
+            </html>";
+
+            File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
+            Console.WriteLine("HTMLSummary  document created successfully at: " + filename);
             return filename;
         }
         public static List<string> tocTitles = new List<string>();
