@@ -2044,8 +2044,10 @@ class Program
             string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
             string progressFileTxt = "progresscontroller.txt";
             string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
+            string chapterTitlesPathHtmlSummary = "summary_talkfilebook_" + filename + ".html";
             string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
 
+            string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
             string outputFilePath = appPath + chapterTitlesPath;
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
@@ -2462,23 +2464,46 @@ class Program
                     await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
                         + liness.ToString() + " of total:" + chapterCount.ToString());
                 }
-                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
-                Console.WriteLine("DOING FINAL SUMMARY");
-                string getOverallSummary = await  LargeGPT.CallLargeChatGPT("Get a summary of 5 paragraphs for" +
-                    " the following plotline and make sure it is properly formated within <p></p> tags:" + overallPlotLineSummary, "o3-mini");
-                overallPlotline += getOverallSummary + "<hr>";
-                overallPlotline += "</body></html>";
-                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(overallPlotline, outputFilePathPdfSummary);
-                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
-
+                // Doing the main book pdf
                 string htmlContent = File.ReadAllText(outputFilePathHtml);
                 HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
-                pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
                 await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
-                Console.WriteLine("PDF upload to Blob:" + result);
-                
+
+                Console.WriteLine("PDF upload to Blob, now working on the summary:" + result);
+
+                // Going to do the pdf and txt summary
+                htmlContent = File.ReadAllText(outputFilePathHtml);
+                string htmlPathBookImage = GetPromptVars.MainHtmlImageTop;
+                string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
+                plainText = System.Net.WebUtility.HtmlDecode(plainText);
+
+                // Replace with actual call to AI
+                string summary_ = await LargeGPT.GetGrok("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                    " Give only the answer, no leading text or after text. Create a summary of 5 paragraphs for this book." +
+                    plainText, "grok-3-mini-beta");
+
+                // Format into C#-compatible string variable
+                summary_ = summary_.Replace("Table of Contents", "");
+                string formatted = GlobalMethods.FormatAsCSharpString(summary_);
+                HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, appPath + htmlPathBookImage + ".jpg");
+
+                // Add text to html
+                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
+                                 summary_, "Arial", 16, false);
+
+                htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+                Console.WriteLine("Builded the files, uploading to blob.");
+                pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
+                result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
+                await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
+                Console.WriteLine("Done. Result " + result);
+
+                Console.WriteLine("Done with book AND summary:" + result);
+
+
             }
             catch (Exception ex)
             {
@@ -2490,9 +2515,15 @@ class Program
             try
             {
                 Console.WriteLine("Getting `summary...");
+                string pPath = @"D:\Boeken\Republic - NL - The Chest of Conscience - The Decline of Prince Maurits\"; 
+                string pImage = @"Create an abstract intense image WITHOUT TEXT around Hugo de Groot in Dutch Republic times.jpg";
+                string pHtml = @"talkfilebook_20250424103852292.html";
                 string htmlPath =
-                    @"D:\Boeken\Medieval - NL - The Crescent and the Cross I - The Reckoning of Jacob de Graaff\" +
-                    "talkfilebook_20250421223330614.html";
+                    pPath +
+                    pHtml;
+                string htmlPathBookImage =
+                    pPath +
+                    pImage;
                 string htmlContent = await File.ReadAllTextAsync(htmlPath);
                 string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
                 plainText = System.Net.WebUtility.HtmlDecode(plainText);
@@ -2521,16 +2552,16 @@ class Program
                 string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
                 string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
                 string outpuFilePathTxtSummary = chapterTitlesTxtSummary;
-                HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary);
+                HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, htmlPathBookImage);
 
                 // Add text to html
                 HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
                                  summary_, "Arial", 16, false);
 
-                //HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(outputFilePathHtmlSummary, outputFilePathPdfSummary);
-                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtmlSummary, outputFilePathPdfSummary);
+                htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtmlSummary, outputFilePathPdfSummary);
                 Console.WriteLine("Builded the files, uploading to blob.");
-                //string htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
                 string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
                 await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");

@@ -4662,13 +4662,14 @@ namespace Writeyourownbooktest
             Console.WriteLine("HTML document created successfully at: " + filename);
             return filename;
         }
-        public static string CreateHtmlDocumentSummary(string filename)
+        public static string CreateHtmlDocumentSummary(string filename, string bookImage)
         {
             if (File.Exists(filename))
             {
                 Console.WriteLine("HTML file already exists. Skipping creation.");
                 return filename;
             }
+            string bbI = bookImage;
             string baseDir = AppContext.BaseDirectory;
             string imagePath = baseDir + "summary.gif"; // Without .jpg
             string firstPageInit = GetPromptVars.FirstPageInitiation;
@@ -4767,7 +4768,12 @@ namespace Writeyourownbooktest
                     <img src=""{imagePath}"" alt=""Inserted Image"">
                 </div>
             </center>
-            
+            <div style='page-break-after: always;'></div>
+            <center>
+            <div class=""image-container"">
+                    <img src=""{bbI}"" alt=""Inserted Image"">
+                </div>
+            </center>
             <div class='text-container'>
        
             </div>
