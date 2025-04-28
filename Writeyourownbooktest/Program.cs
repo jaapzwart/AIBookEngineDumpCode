@@ -1,6 +1,4 @@
-﻿
-
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using OpenAI_API.Completions;
 using OpenAI_API.Images;
 using System.Text;
@@ -91,6 +89,8 @@ using OpenXmlPowerTools.HtmlToWml.CSS;
 using OpenXmlPowerTools;
 using PdfSharp.Pdf.Content.Objects;
 using NAudio.CoreAudioApi;
+using Microsoft.Extensions.Azure;
+using iText.Kernel.XMP.Impl.XPath;
 
 
 
@@ -1462,7 +1462,7 @@ class Program
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
         }
-        else if (args[0] != null && args[0].Contains("talkBookComplete"))
+        else if (args[0] != null && args[0].Contains("talkBookCompleteStatic"))
         {
             GetPromptVars.LoadDataGenericPromptVars();
             GetPromptVars.LoadDataDocHtmlPromptVars();
@@ -1503,11 +1503,11 @@ class Program
             {
                 iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
             }
-            
+
             sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "")
                     .Replace("\"", "").Replace(";", "");
             imagePath = "";
-            
+
             // Do image
             //
             if (_examples.Contains("dochtml"))
@@ -1603,18 +1603,18 @@ class Program
                 string bigStory = "";
                 #endregion
 
-                
+
                 string sPrevious = "";
                 string line = "";
-                for(int i = 0; i < lines.Count; i++)
+                for (int i = 0; i < lines.Count; i++)
                 {
                     sFore = lines[i].ToString();
                     line = sFore;
-                    
+
                     #region Create Image in the lines
                     // Prep quote
                     // 
-                    if(_examples.Contains("doclearn"))
+                    if (_examples.Contains("doclearn"))
                     {
                         iimage = GlobalMethods.GetSubStringForImages(line,
                             "Write an exciting long elaborated detailed book chapter about Microsoft AI 900 exam prep on the title – ");
@@ -1624,7 +1624,7 @@ class Program
                         iimage = GlobalMethods.GetSubStringForImages(line,
                             "Write an exciting long elaborated detailed book chapter about Microsoft AI 900 exam prep on the title – ");
                     }
-                    if(_examples.Contains("dochtml"))
+                    if (_examples.Contains("dochtml"))
                     {
                         string titlePrefix = GetPromptVars.TitlePrefix;
                         iimage = GlobalMethods.GetSubStringForImages(line, titlePrefix);
@@ -1690,7 +1690,7 @@ class Program
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
                         HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
                     }
-                    else if(_examples.Contains("dochtml"))
+                    else if (_examples.Contains("dochtml"))
                     {
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", "Quoted text added successfully.");
                         HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, iimage, "h1", "Tahoma");
@@ -1720,7 +1720,7 @@ class Program
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, getQuote, true, true, "white", false, "black", "Garamond", 22);
                     }
-                    else if(_examples.Contains("dochtml"))
+                    else if (_examples.Contains("dochtml"))
                     {
                         imagePath = appPath + sClean + ".jpg";
                         HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath);
@@ -1810,16 +1810,16 @@ class Program
                             }
                             sPrevious = sPlotters;
                         }
-                        
-                       
+
+
                     }
-                    else if(_examples.Contains("dochtml"))
+                    else if (_examples.Contains("dochtml"))
                     {
-                        
+
                         if (liness >= 1)
                         {
                             string foreRunning = "";
-                            
+
                             //------------------------
                             // Do the chapter stack
                             //------------------------
@@ -1827,7 +1827,7 @@ class Program
                             {
                                 responseLines.Add(getResponse);
                                 getResponseLiness = "";
-                                foreach(string res in responseLines)
+                                foreach (string res in responseLines)
                                 {
                                     getResponseLiness += res + '\n';
                                 }
@@ -1836,12 +1836,12 @@ class Program
                             {
                                 getResponseLiness = "";
                                 List<string> resTemp = new List<string>();
-                                foreach(string res in responseLines)
+                                foreach (string res in responseLines)
                                 {
                                     resTemp.Add(res);
                                 }
                                 responseLines.Clear();
-                                for(int iR = 1;iR <= 7; iR++)
+                                for (int iR = 1; iR <= 7; iR++)
                                 {
                                     responseLines.Add((string)resTemp[iR]);
                                 }
@@ -1857,7 +1857,7 @@ class Program
 
                             bool doCreative = false;
                             if (doCreative)
-                            { 
+                            {
                                 string changeRunningPrompt = await GetCreativePrompt(getResponseLiness, foreRunning);
                                 foreRunning = changeRunningPrompt;
                             }
@@ -1865,7 +1865,7 @@ class Program
                             {
                                 foreRunning = GetPromptVars.SecondRunningPrompt;
                             }
-                            sFore += " " + 
+                            sFore += " " +
                                 foreRunning + " Make SURE THIS CHAPTER IS A NATURAL FIT AND CONTINUATION OF THE PREVIOUS CHAPTER:"
                                 + responseLines.First() + " AND ALSO MAKE IT A NATURAL " +
                                 "CONTINUATION AND ADDITION TO THE STORYLINE SO FAR that can be found in :" + getResponseLiness;
@@ -1887,7 +1887,7 @@ class Program
                             {
                                 foreRunning = GetPromptVars.FirstForePrompt;
                             }
-                            sFore += " " + 
+                            sFore += " " +
                                 foreRunning + " Make it a very elaborative long chapter. Built upon plot - " + bookPlot;
                         }
                         string ExtraCatch = GetPromptVars.ExtraTouch;
@@ -1979,7 +1979,7 @@ class Program
 
 
                     }
-                    else if(_examples.Contains("dochtml"))
+                    else if (_examples.Contains("dochtml"))
                     {
                         string front = "Make sure the text is put in an easy to read overview. Like this:"
                             + "<p>paragraph</p>"
@@ -1996,7 +1996,7 @@ class Program
                         sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
                         HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 22);
 
-                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);                  
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml, getResponse, "Arial", 14);
                     }
                     else
                     {
@@ -2019,18 +2019,570 @@ class Program
             {
                 Console.WriteLine("Error:" + ex.Message);
             }
-           
+
+        }
+        else if (args[0] != null && args[0].Contains("GetGoogle"))
+        {
+            string textToTranslate = "Write a very large book chapter with rich dialogues between characters about Pythagoras." +
+                "Without special characters and the character dialogues mus be integrated in the text itself with rich scenery" +
+                " descriptions, character descriptions, emotion description and it must become a very fluently readable chapter."; // Ensure this isn’t null in your actual use
+            string answer = await LargeGPT.GetGoogleLarge(textToTranslate);
+            Console.WriteLine($"Final Answer: {answer}");
+        }
+        else if (args[0] != null && args[0].Contains("talkBookCompleteDynamic"))
+        {
+            await GetPromptVars.LoadDataGenericPromptVars();
+            await GetPromptVars.LoadDataDocHtmlPromptVars();
+            await GetPromptVars.LoadPlotDataDocHtmlPlotVars();
+
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string filePath = "FileTalkBook.txt";
+            string filePlot = "FileBookStart.txt";
+
+            string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            string chapterTitlesPath = "talkfilebook_" + filename + ".docx";
+            string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
+            string progressFileTxt = "progresscontroller.txt";
+            string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
+            string chapterTitlesPathHtmlSummary = "summary_talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
+
+            string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
+            string outputFilePath = appPath + chapterTitlesPath;
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
+            string outputFileProgressTxt = progressFileTxt;
+            string cc = GlobalMethods.CreateWordDocument(chapterTitlesPath);
+
+            string getQuote, sQuote, imagePath, Simage;
+            string sClean = "";
+            string iimage = "";
+            string makingImage = "";
+            bool success;
+            string _examples = args[1];
+            string _AIProvider = args[2];
+            string _AILanguage = args[3];
+            string _AIImages = args[4];
+
+            if (_examples.Contains("dochtml"))
+            {
+                string FirstImageOfBook = GetPromptVars.MainHtmlImageTop;
+                iimage = GlobalMethods.GetSubStringForImages("##" + FirstImageOfBook, "##");
+            }
+            if (_examples.Contains("doclonghtml") || _examples.Contains("doclearn"))
+            {
+                iimage = GlobalMethods.GetSubStringForImages("##Create a mathematical image Artificial Intelligence", "##");
+            }
+            bool doImage = false;
+            if (_AIImages.Contains("true"))
+                doImage = true;
+
+            if (doImage)
+            {
+                sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "");
+                imagePath = "";
+
+                if (_examples.Contains("dochtml"))
+                {
+                    string FirstImageOfBook = GetPromptVars.MainHtmlImageTop;
+                    makingImage = FirstImageOfBook + " ";
+                }
+                if (_examples.Contains("doclonghtml"))
+                {
+                    makingImage = "Create an artificial intelligence image on the topic - ";
+                }
+                if (_examples.Contains("doclearn"))
+                {
+                    makingImage = "Create a mathematical image inspired by artificial intelligence on ";
+                }
+
+                Simage = await GetDalleGood(makingImage + iimage);
+                if (Simage.Contains("Bad Request"))
+                {
+                    Simage = await GetDalleGood(makingImage + sClean);
+                }
+                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+                success = false;
+                while (!success)
+                {
+                    try
+                    {
+                        await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                        success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error reducing image:" + ex.Message);
+                        Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                        Simage = await GetDalleGood(makingImage + iimage);
+                        if (Simage.Contains("Bad Request"))
+                        {
+                            Simage = await GetDalleGood(makingImage + sClean);
+                        }
+                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                    }
+                }
+            }
+            HtmlGenerator.CreateHtmlDocument(outputFilePathHtml);
+            await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Starting");
+
+            List<string> lines = new List<string>();
+            string allBookTitles = "";
+
+            try
+            {
+                string bookPlot = "";
+                using (StreamReader readerPlot = new StreamReader(filePlot))
+                {
+                    string lline;
+                    while ((lline = readerPlot.ReadLine()) != null)
+                    {
+                        bookPlot += lline + '\n';
+                    }
+                }
+                string bookTitles = "";
+                using (StreamReader readerTitles = new StreamReader(filePath))
+                {
+                    string lline;
+                    while ((lline = readerTitles.ReadLine()) != null)
+                    {
+                        bookTitles += lline + '\n';
+                    }
+                }
+                using (StreamReader reader = new StreamReader(filePath))
+                {
+                    string lline;
+                    while ((lline = reader.ReadLine()) != null)
+                    {
+                        lines.Add(lline);
+                        allBookTitles += lline + '\n';
+                    }
+                }
+
+                int liness = 0;
+                int linessResponse = 0;
+                string getResponseLiness = "";
+                List<string> responseLines = new List<string>(); // To store all chapters so far
+                List<string> chaptersSoFar = new List<string>(); // To make sure the titles are different from each other.
+                string getResponse = "";
+                string sFore = "";
+                string previousChapterSummary = ""; // To store a concise summary of the previous chapter
+                string overallPlotline = "<html><body><br>" +
+                    "<h1>Summary of book</h1><hr>" +
+                    GetPromptVars.NameOfBook + "<hr>"; // Initial plotline, will evolve
+                string overallPlotLineSummary = "";
+
+                string summaryAnPlotPossibilities = "";
+                string chosenWayForward = "";
+
+                string sPrevious = "";
+                string line = "";
+                int chapterCount = Convert.ToInt16(GetPromptVars.PageNumbersOfBook);
+
+                for (int i = 0; i < chapterCount; i++)
+                {
+                    sFore = "";
+                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
+                        + liness.ToString() + " of total:" + chapterCount.ToString());
+
+                    int introLimit = chapterCount / 3;
+                    int midLimit = (chapterCount * 2) / 3;
+                    string chapterStage = "";
+                    if (i < introLimit) chapterStage = "INTRO";
+                    else if (i < midLimit) chapterStage = "MIDDLE";
+                    else chapterStage = "END";
+
+                    if (_examples.Contains("dochtml"))
+                    {
+                        string foreRunning = "";
+
+                        if (liness >= 1) // Not the first chapter
+                        {
+                            //------------------------
+                            // Do the chapter stack
+                            //------------------------
+                            if (liness <= 16) // Build the first three previous chapters
+                            {
+                                responseLines.Add(getResponse);
+                                getResponseLiness = "";
+                                foreach (string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
+                            else // Place the last two chapters as first two and add last chapter as last
+                            {
+                                getResponseLiness = "";
+                                List<string> resTemp = new List<string>();
+                                foreach (string res in responseLines)
+                                {
+                                    resTemp.Add(res);
+                                }
+                                responseLines.Clear();
+                                for (int iR = 1; iR <= 15; iR++)
+                                {
+                                    responseLines.Add((string)resTemp[iR]);
+                                }
+                                responseLines.Add(getResponse);
+                                foreach (string res in responseLines)
+                                {
+                                    getResponseLiness += res + '\n';
+                                }
+                            }
+                            foreRunning = GetPromptVars.SecondRunningPrompt;
+
+                            // Enhanced prompt with full context and anti-repetition instruction
+                            sFore += " " + foreRunning +
+                                 " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
+                                 " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
+                                 " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
+                                 " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
+                                 " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+                        }
+                        else // First chapter
+                        {
+                            foreRunning = GetPromptVars.FirstForePrompt;
+                            sFore += " " + foreRunning +
+                                     " Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + GetPromptVars.BookPlotLine + "'." +
+                                     " Use this opening not merely as a starting point, but as a threshold—introducing the world, the protagonist, and the first sparks of tension that hint at larger forces at play." +
+                                     " Allow the narrative to unfold with a dynamic structure, unconstrained by a strict chronological order—play with time through memories, visions, or foreshadowing to weave a layered introduction." +
+                                     " This chapter should not resolve key plotlines, but rather ignite curiosity and lay the emotional and thematic groundwork for the journey ahead.";
+
+                        }
+
+                        // Stage-specific instructions to guide the story arc
+                        switch (chapterStage)
+                        {
+                            case "INTRO":
+                                sFore += " Continue where the last chapter ended." +
+                                    " Introduce the main characters, setting, and premise. Establish the initial situation and hint at the central conflict. Provide enough context to engage the reader and set expectations for the journey ahead.";
+                                break;
+
+                            case "MIDDLE":
+                                sFore += " Continue where the last chapter ended." +
+                                    "Develop the main conflict and expand the story world. Show how characters respond to increasing challenges. Introduce new complications, deepen relationships, and shift the story toward a turning point.";
+                                break;
+
+                            case "END":
+                                if (i == chapterCount - 1) // Final chapter
+                                {
+                                    sFore += " Continue where the last chapter ended." +
+                                        "Conclude the story with a satisfying resolution. Address the main conflict and bring character arcs to a logical and meaningful end. Ensure the ending aligns with the tone and structure of the overall narrative.";
+                                }
+                                else
+                                {
+                                    sFore += " Continue where the last chapter ended:" + responseLines.Last() +
+                                        "Raise the tension and push the story toward its conclusion. Begin resolving subplots and highlight consequences of earlier actions. Prepare the stage for the final chapter by tightening the focus on the central narrative.";
+                                }
+                                break;
+                        }
+
+                        string ExtraCatch = GetPromptVars.ExtraTouch;
+                        sFore += " " + ExtraCatch;
+                    }
+
+                    string front = "";
+                    front += "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
+
+                    if (_AIProvider.Contains("o1"))
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
+                    else if (_AIProvider.Contains("o3-mini"))
+                    {
+                        int bBig = front.Length + sFore.Length;
+                        Console.WriteLine("Before ACTUALLY DOING getResponse..." + '\n' +
+                            "Responeselines count:" + responseLines.Count.ToString() + '\n' +
+                            "GetResponse total:" + getResponseLiness.Length.ToString() + '\n' +
+                            "front + sfore length:" + bBig.ToString());
+
+                        getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o3-mini") + "\n\n";
+                        Console.WriteLine("After ACTUALLY DOING getResponse...");
+                    }
+                    else if (_AIProvider.Contains("Google"))
+                    {
+                        if(_AILanguage.Contains("nl"))
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "Dutch") + "\n\n";
+                        else if (_AILanguage.Contains("de"))
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "German") + "\n\n";
+                        else
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
+                    }
+                    else if (_AIProvider.Contains("grok-3-beta") || _AIProvider.Contains("grok-3-mini-beta"))
+                        getResponse = await LargeGPT.GetGrok("Return only the content of the chapter:" +
+                            front + sFore, _AIProvider) + "\n\n";
+
+                    // Update overallPlotline with a summary of key developments
+                    string plotUpdate = await LargeGPT.CallLargeChatGPT(
+                        "Summarize the key plot developments in this chapter in 1-2 sentences: '" + getResponse + "'",
+                        "o3-mini");
+                    overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
+
+                    // Generate chapter title based on the evolving plot
+                    if (_examples.Contains("dochtml"))
+                    {
+                        if (liness >= 1)
+                        {
+                            // Generate title and check for similarity
+                            string getChapters = "";
+                            foreach (var gC in chaptersSoFar)
+                                getChapters += gC + '\n';
+
+                            iimage = await LargeGPT.CallLargeChatGPT(
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on the essence of this chapter: '" + getResponse +
+                                "' but make the title totally different from any chapter names in: " + getChapters + " while sticking to the essence of current chapter as was given" +
+                                " but buiding further on the storyline.",
+                                "o3-mini");
+
+                            chaptersSoFar.Add(iimage); // Optional: add it to your list to avoid future duplicates
+                        }
+                        else
+                        {
+                            iimage = await LargeGPT.CallLargeChatGPT(
+                                "Make sure the title starts with a capital. Create a good title in max 5 words based on this initial plotline: '" + GetPromptVars.BookPlotLine + "'",
+                                "o3-mini");
+                            chaptersSoFar.Add(iimage);
+                        }
+                        string _translatedTitle = "";
+                        if (_AILanguage.Contains("xxx"))
+                            _translatedTitle = iimage;
+                        else if (_AILanguage.Contains("nl"))
+                            _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        iimage = _translatedTitle;
+                    }
+
+                    sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+                    
+                    if (doImage)
+                    {
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                        imagePath = "";
+                        if (_examples.Contains("dochtml"))
+                        {
+                            string TopImage = GetPromptVars.MainHtmlImageTop;
+                            makingImage = GetPromptVars.MainHtmlImageTop + " on the title - ";
+                        }
+                        Simage = "";
+                        success = false;
+                        while (!success)
+                        {
+                            try
+                            {
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + sQuote);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                                success = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + iimage);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                            }
+                        }
+
+                        success = false;
+                        while (!success)
+                        {
+                            try
+                            {
+                                await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                                success = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                                iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                                if (Simage.Contains("Bad Request"))
+                                {
+                                    Simage = await GetDalleGood(makingImage + sClean);
+                                }
+                                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                            }
+                        }
+                    }
+
+                    // Append to HTML
+                    if (_examples.Contains("dochtml"))
+                    {
+                        HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", 
+                            "MAIN Quoted text added successfully.", false);
+                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
+                    }
+
+                    if (doImage)
+                    {
+                        imagePath = appPath + sClean + ".jpg";
+                        HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath, false);
+                    }
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    string _translatedQuote = "";
+                    if (_AILanguage.Contains("xxx"))
+                        _translatedQuote = getQuote;
+                    else if (_AILanguage.Contains("nl"))
+                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                    sQuote = _translatedQuote;
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, true, true, "white", false, "black", "Garamond", 28, false);
+                    
+                    Console.WriteLine("Before getResponse...");
+                    // Generate and store chapter content
+                    if (_examples.Contains("dochtml"))
+                    {
+                        getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                        sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                        Console.WriteLine("Before translating sQuote");
+                        if (_AILanguage.Contains("xxx"))
+                            _translatedQuote = sQuote;
+                        else if (_AILanguage.Contains("nl"))
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                        sQuote = _translatedQuote;
+                        Console.WriteLine("After translating getQuote");
+
+                        HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 28, false);
+                        
+                        HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
+                                getResponse, "Arial", 16);
+                        Console.WriteLine("After ADDING translated getResponse to the document.");
+                    }
+                    liness += 1;
+                    linessResponse += 1;
+                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
+                        + liness.ToString() + " of total:" + chapterCount.ToString());
+                }
+                // Doing the main book pdf
+                string htmlContent = File.ReadAllText(outputFilePathHtml);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
+                await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
+
+                Console.WriteLine("PDF upload to Blob, now working on the summary:" + result);
+
+                // Going to do the pdf and txt summary
+                htmlContent = File.ReadAllText(outputFilePathHtml);
+                string htmlPathBookImage = GetPromptVars.MainHtmlImageTop;
+                string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
+                plainText = System.Net.WebUtility.HtmlDecode(plainText);
+
+                // Replace with actual call to AI
+                string summary_ = await LargeGPT.GetGrok("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                    " Give only the answer, no leading text or after text. Create a summary of 5 paragraphs for this book." +
+                    plainText, "grok-3-mini-beta");
+
+                // Format into C#-compatible string variable
+                summary_ = summary_.Replace("Table of Contents", "");
+                string formatted = GlobalMethods.FormatAsCSharpString(summary_);
+                HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, appPath + htmlPathBookImage + ".jpg");
+
+                // Add text to html
+                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
+                                 summary_, "Arial", 16, false);
+
+                htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+                Console.WriteLine("Builded the files, uploading to blob.");
+                pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
+                result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
+                await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
+                Console.WriteLine("Done. Result " + result);
+
+                Console.WriteLine("Done with book AND summary:" + result);
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error:" + ex.Message);
+            }
+        }
+        else if(args[0] != null && args[0].Contains("WriteSummaryToBlob"))
+        {
+            try
+            {
+                Console.WriteLine("Getting `summary...");
+                string pPath = @"D:\Boeken\Republic - NL - The Chest of Conscience - The Decline of Prince Maurits\"; 
+                string pImage = @"Create an abstract intense image WITHOUT TEXT around Hugo de Groot in Dutch Republic times.jpg";
+                string pHtml = @"talkfilebook_20250424103852292.html";
+                string htmlPath =
+                    pPath +
+                    pHtml;
+                string htmlPathBookImage =
+                    pPath +
+                    pImage;
+                string htmlContent = await File.ReadAllTextAsync(htmlPath);
+                string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
+                plainText = System.Net.WebUtility.HtmlDecode(plainText);
+
+                // Replace with actual call to AI
+                string summary_ = await LargeGPT.GetGrok("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                    " Give only the answer, no leading text or after text. Create a summary of 5 paragraphs for this book." +
+                    plainText, "grok-3-mini-beta");
+
+                // Format into C#-compatible string variable
+                summary_ = summary_.Replace("Table of Contents", "");
+                string formatted = GlobalMethods.FormatAsCSharpString(summary_);
+
+                Console.WriteLine("Starting PDF logic.");
+
+                await GetPromptVars.LoadDataGenericPromptVars();
+                await GetPromptVars.LoadDataDocHtmlPromptVars();
+                await GetPromptVars.LoadPlotDataDocHtmlPlotVars();
+
+                string appPath = AppDomain.CurrentDomain.BaseDirectory;
+                string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
+                string chapterTitlesPathHtmlSummary = "talkfilebook_" + filename + ".html";
+                string chapterTitlesTxtSummary = "talkfilebook_" + filename + ".txt";
+                string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
+
+                string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
+                string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
+                string outpuFilePathTxtSummary = chapterTitlesTxtSummary;
+                HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, htmlPathBookImage);
+
+                // Add text to html
+                HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
+                                 summary_, "Arial", 16, false);
+
+                htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtmlSummary, outputFilePathPdfSummary);
+                Console.WriteLine("Builded the files, uploading to blob.");
+                byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
+                await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
+                Console.WriteLine("Done. Result " + result);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Wrong:" + ex.Message);
+            }
+
         }
         else if (args[0] != null && args[0].Contains("PdfUploadToBlob"))
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
-            string chapterTitlesPathPdf = "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm" + ".pdf";
+            string chapterTitlesPathPdf = "talkfilebook_20250421223330614" + ".pdf";
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - Perry Rhodan Universe -  Het verbrijzelde continuüm.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "Medieval - NL - The Crescent and the Cross I - The Reckoning of Jacob de Graaff.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch (Exception ex)
@@ -2042,23 +2594,40 @@ class Program
         {
             string appPath = AppDomain.CurrentDomain.BaseDirectory;
             // Create the Word document
-            string chapterTitlesPathHtml = "Perry rhodan the shadow fractal" + ".html";
-            string chapterTitlesPathPdf = "Perry rhodan the shadow fractal" + ".pdf";
+            string chapterTitlesPathHtml = "talkfilebook_20250419205712548" + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_20250419205712548_1" + ".pdf";
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             Console.WriteLine("Starting PDF logic.");
             try
             {
-                ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                //ConvertHmlToPdf.ConvertToPdfAspose(outputFilePathHtml, outputFilePathPdf);
+                //ConvertHmlToPdf.ConvertToPdf_Dink(outputFilePathHtml, outputFilePathPdf, "");
+                string htmlContent = File.ReadAllText(outputFilePathHtml);
+                HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
                 Console.WriteLine("Pdf converted, starting the upload to blob");
                 byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
-                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "RHODAN - NC 1 - 1.The Shadow Fractal.pdf", "mindscripted");
+                string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, "Republic - NL - The Chest of Conscience - The Decline of Prince Maurits.pdf", "mindscripted");
                 Console.WriteLine("PDF upload to Blob:" + result);
             }
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+        else if (args[0] != null && args[0].Contains("DinkyPdf"))
+        {
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            // Create the Word document
+            string chapterTitlesPathHtml = "talkfilebook_20250420185325911" + ".html";
+            string chapterTitlesPathPdf = "Dinky1" + ".pdf";
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+
+            string htmlContent = File.ReadAllText(outputFilePathHtml);
+
+            HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
+            Console.WriteLine("PDF created successfully.");
         }
         // "talk" "subject" "US" 0.85 3
         // "talkfile" (reads the file Filetalk.txt) and saves output to a file.
@@ -6821,5 +7390,7 @@ class Character
 
     #endregion
 }
+
+
 
 

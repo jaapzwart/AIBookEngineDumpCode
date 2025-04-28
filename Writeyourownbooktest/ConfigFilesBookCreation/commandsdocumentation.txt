@@ -152,4 +152,16 @@ This file gives the use influence on the creation of the names of the titles for
 sTwoLinesChapterTitlesThriller
 -------------------------------------------------------------
 Extra parameters when doing a thriller
+<<<<<<< HEAD
+----------------------------------------------------------------------------------------------------------------------
+// "talkBookCompleteDynamic" "dochtml" "Google" "nl" "true"
+*******************************************************************************************************************
+// Creates a thriller based on the info in some files.
+// parameters
+// 1 = which loop
+// 2 = which AI (o1 or Google)
+// 3 = which language (xxx, nl, none)
+// 4 = images or not
+=======
+>>>>>>> parent of 79e6ab8 (Coherent trillers.)
 

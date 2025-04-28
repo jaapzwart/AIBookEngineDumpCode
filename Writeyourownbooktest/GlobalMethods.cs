@@ -73,6 +73,10 @@ using Body = DocumentFormat.OpenXml.Wordprocessing.Body;
 using Shading = DocumentFormat.OpenXml.Wordprocessing.Shading;
 using Inline = DocumentFormat.OpenXml.Drawing.Wordprocessing.Inline;
 using static IronPython.Modules._ast;
+using Aspose.Words.LowCode;
+using Google.Cloud.Translation.V2;
+using Aspose.Pdf.Plugins;
+using static Community.CsharpSqlite.Sqlite3;
 
 
 namespace Writeyourownbooktest
@@ -1318,7 +1322,7 @@ namespace Writeyourownbooktest
                 Run run = para.AppendChild(new Run());
 
                 // Assuming you might want to add text initially
-                run.AppendChild(new Text("Hello, this is a new document created on " + DateTime.Now.ToString()));
+                run.AppendChild(new Text("Hello, this is a new document created on " + System.DateTime.Now.ToString()));
 
                 // Save changes to the document.
                 mainPart.Document.Save();
@@ -3336,6 +3340,28 @@ namespace Writeyourownbooktest
             }
         }
 
+        public static async Task WriteProgress(string outputFilePathPdf, string outputFileProgressTxt, string progressText)
+        {
+            if (File.Exists(outputFileProgressTxt))
+            {
+                Console.WriteLine("The progress file exists — deleting...");
+                GlobalMethods.deleteFileFromBlob(outputFileProgressTxt, "mindscriptedconfig");
+                File.Delete(outputFileProgressTxt);
+            }
+            else
+            {
+                Console.WriteLine("The progress file does NOT exist.");
+            }
+
+            // (Re)create the progress file
+            HtmlGenerator.CreateProgressDocument(outputFileProgressTxt, progressText);
+
+            // Read and upload to blob
+            byte[] txtBytes = File.ReadAllBytes(outputFileProgressTxt);
+            Console.WriteLine("After byte fill progress");
+            string resultProgress = await GlobalMethods.WritePdfToBlobAsync(txtBytes, outputFileProgressTxt, "mindscriptedconfig");
+
+        }
         public static string readFileFromBlob(string fileName, string blobber)
         {
             try
@@ -3387,6 +3413,76 @@ namespace Writeyourownbooktest
                 return ex.Message;
             }
         }
+        public static string FormatAsCSharpString(string rawSummary)
+        {
+            var paragraphs = rawSummary.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("string summary_ =");
+
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                string escaped = paragraphs[i].Replace("\"", "\\\""); // Escape quotes
+                sb.Append($"    \"{escaped}");
+
+                if (i < paragraphs.Length - 1)
+                    sb.Append("\\n\\n\" +\n");
+                else
+                    sb.Append("\";");
+            }
+
+            return sb.ToString();
+        }
+        public static async Task<string> WriteFileToBlobAsync(string content, string fileName, string containerName)
+        {
+            try
+            {
+                string connectionString = Secrets.cloudStorageConnString;
+                var account = CloudStorageAccount.Parse(connectionString);
+                var blobClient = account.CreateCloudBlobClient();
+
+                // Get reference to the container and ensure it exists
+                var container = blobClient.GetContainerReference(containerName);
+                await container.CreateIfNotExistsAsync();
+
+                // Get reference to the blob and upload the content
+                var blockBlob = container.GetBlockBlobReference(fileName);
+                await blockBlob.UploadTextAsync(content);
+
+                return "Success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+        public static async Task<string> UploadPdfToBlobAsync(string filePath, string fileName, string containerName)
+        {
+            try
+            {
+                string connectionString = Secrets.cloudStorageConnString;
+                var account = CloudStorageAccount.Parse(connectionString);
+                var blobClient = account.CreateCloudBlobClient();
+
+                // Ensure the container exists
+                var container = blobClient.GetContainerReference(containerName);
+                await container.CreateIfNotExistsAsync();
+
+                // Get a reference to the blob and upload the file
+                var blockBlob = container.GetBlockBlobReference(fileName);
+                using (var fileStream = File.OpenRead(filePath))
+                {
+                    await blockBlob.UploadFromStreamAsync(fileStream);
+                }
+
+                return "Success";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+
         public static async Task<string> WritePdfToBlobAsync(byte[] pdfBytes, string fileName, string containername)
         {
             try
@@ -3892,12 +3988,25 @@ namespace Writeyourownbooktest
         #endregion
 
     }
-    
+    public static class UpDateProgress
+    {
+        public static async Task SendProgressAsync(int percent)
+        {
+            using var client = new HttpClient();
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { "value", percent.ToString() }
+            });
+
+            // Replace with your local MVC app URL
+            await client.PostAsync("https://localhost:7110/Progress/update", content);
+        }
+    }
     public static class LargeGPT
     {
         private static readonly string apiKey = Secrets._o1;
         private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
-       
+
         public static async Task<string> CallLargeChatGPT(string prompt, string modell)
         {
             var response = await CallOpenAIAsync(prompt, modell);
@@ -3970,7 +4079,7 @@ namespace Writeyourownbooktest
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
         }
-        public static async Task<string> GetGrok(string question)
+        public static async Task<string> GetGrok(string question, string modell)
         {
             string resultGrok = "";
             // Your API key and base URL 
@@ -3985,13 +4094,13 @@ namespace Writeyourownbooktest
                 // Define the request body 
                 var requestBody = new
                 {
-                    model = "grok-beta",
+                    model = modell,
                     messages = new[]
                     {
                     new { role = "system", content = Secrets.GrokRole },
                     new { role = "user", content = question }
                     },
-                    max_tokens = 4096  // Set to the maximum allowed tokens for grok-beta
+                    max_tokens = 40000  // Set to the maximum allowed tokens for grok-beta
                 };
 
                 // Serialize the request body to JSON 
@@ -4020,6 +4129,219 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
+        public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
+        {
+            string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+                // 1. Vertex AI Configuration
+                string projectId = Secrets.GoogleProjectID;
+                string location = "us-central1";
+                string publisher = "google";
+                string modelId = "gemini-2.5-pro-exp-03-25";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
+                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+                Console.WriteLine($"API Endpoint: {apiEndpoint}");
+                Console.WriteLine($"Credentials Path: {credentialsFilePath}");
+
+                // 2. Set up authentication
+                var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+                var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+                var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+                Console.WriteLine("Access Token retrieved successfully");
+
+                // 3. Prepare the Request
+                string prompt = textToTranslate ?? "Tell me about stars.";
+                string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs." +
+                    $"Please answer the following in {answerLanguage}: {prompt}";
+                Console.WriteLine($"Input Question: {question}");
+
+                var requestData = new
+                {
+                    contents = new[]
+                    {
+                new
+                {
+                    role = "user",
+                    parts = new[]
+                    {
+                        new { text = question }
+                    }
+                }
+            },
+                    generationConfig = new
+                    {
+                        temperature = 0.4,
+                        maxOutputTokens = 64000,
+                        topP = 0.95,
+                        topK = 40
+                    }
+                };
+
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+                Console.WriteLine($"Request JSON: {jsonContent}");
+
+                // 4. Make the API call
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    var response = await client.PostAsync(apiEndpoint, content);
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Raw API Response: {result}");
+                    Console.WriteLine($"HTTP Status Code: {response.StatusCode}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"API request failed with status {response.StatusCode}: {result}");
+                    }
+
+                    // 5. Parse the response
+                    var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
+                    if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+                    {
+                        string answer = responseData.Candidates[0].Content.Parts[0].Text;
+                        Console.WriteLine($"Extracted Answer: {answer}");
+                        return answer;
+                    }
+                    else
+                    {
+                        throw new Exception("No valid response from the API: " + result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+        }
+        // We want really different titles.
+        public static int LevenshteinDistance(string s, string t)
+        {
+            int[,] d = new int[s.Length + 1, t.Length + 1];
+
+            for (int i = 0; i <= s.Length; i++)
+                d[i, 0] = i;
+            for (int j = 0; j <= t.Length; j++)
+                d[0, j] = j;
+
+            for (int i = 1; i <= s.Length; i++)
+            {
+                for (int j = 1; j <= t.Length; j++)
+                {
+                    int cost = (s[i - 1] == t[j - 1]) ? 0 : 1;
+                    d[i, j] = Math.Min(
+                        Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                        d[i - 1, j - 1] + cost);
+                }
+            }
+
+            return d[s.Length, t.Length];
+        }
+
+        // Helper method to check if a similar title already exists
+        public static bool IsSimilar(string newTitle, List<string> existingTitles, int threshold = 5)
+        {
+            return existingTitles.Any(title => LevenshteinDistance(title.ToLower(), newTitle.ToLower()) <= threshold);
+        }
+
+        public class ResponseData
+        {
+            public Candidate[] Candidates { get; set; }
+        }
+
+        public class Candidate
+        {
+            public Content Content { get; set; }
+            public string FinishReason { get; set; }
+            public int Index { get; set; }
+        }
+
+        public class Content
+        {
+            public Part[] Parts { get; set; }
+            public string Role { get; set; }
+        }
+
+        public class Part
+        {
+            public string Text { get; set; }
+        }
+        public static async Task<string> GetGoogle(string textToTranslate, string targetLanguage)
+        {
+            try
+            {
+                string translation = "";
+                if (targetLanguage.Contains("nl"))
+                    translation = "Translate the answer of the following to Dutch";
+                else
+                    translation = "";
+
+                // Get the full path of the executable file
+                string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+
+                // 1. Vertex AI Configuration
+                string projectId = Secrets.GoogleProjectID;     // Your Google Cloud Project ID
+                string location = "us-central1";                // Your Vertex AI Model Location
+                string publisher = "google";                    // Publisher of the model (e.g., "google")
+                //string modelId = "text-bison@001";              // ID of the Vertex AI Model
+                string modelId = "gemini-2.5-pro-exp-03-25";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:predict";
+                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+                // 2. Prepare the Request
+                //string question = textToTranslate;
+                string question = translation + "-" + textToTranslate;
+                var requestData = new
+                {
+                    instances = new[]
+                    {
+                    new { prompt = question }
+                },
+                    parameters = new
+                    {
+                        temperature = 0.4,                  // Slightly higher for creativity
+                        maxOutputTokens = 64000,             // Increased token limit
+                        topP = 0.95,                        // Nucleus sampling for diverse text
+                        topK = 40                           // Top-k sampling for focused text
+                    }
+                };
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+
+                // 3. Authenticate with OAuth 2.0 (Service Account)
+                GoogleCredential credential = GoogleCredential.FromFile(credentialsFilePath)
+                    .CreateScoped(PredictionServiceClient.DefaultScopes); // Adjust scopes if needed
+                var accessToken = await credential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+
+                // 4. Send the REST Request
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync(apiEndpoint, content);
+
+                // 4. Handle the Response
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseJson = await response.Content.ReadAsStringAsync();
+                    dynamic responseData = JsonConvert.DeserializeObject(responseJson);
+
+                    string answer = responseData.predictions[0].content;
+                    return answer;
+                }
+                else
+                {
+                    return "Failed: " + response.StatusCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+
+        }
 
     }
     public static class ConvertWordToHtml
@@ -4044,8 +4366,22 @@ namespace Writeyourownbooktest
         }
     }
 
-public static class HtmlGenerator
+    public static class HtmlGenerator
     {
+        public static string EnsureJpgExtension(string fileName)
+        {
+            fileName = fileName.TrimEnd().TrimEnd('.', ' ');
+
+            // Remove any extra dots before the extension
+            int lastDotIndex = fileName.LastIndexOf('.');
+            if (lastDotIndex != -1)
+            {
+                fileName = fileName.Substring(0, lastDotIndex);
+            }
+
+            return fileName + ".jpg";
+        }
+
         public static void WriteHtmlHead(string htmlFilePath)
         {
             string htmlHead = @"<!DOCTYPE html>
@@ -4082,37 +4418,57 @@ public static class HtmlGenerator
                 Console.WriteLine("HTML file already exists. Skipping head section.");
             }
         }
+        public static string CreateProgressDocument(string filename, string cContent)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("Progress file already exists. Skipping creation.");
+                return filename;
+            }
 
-        public static void AppendImageToHtml(string htmlFilePath, string imagePath)
+            File.AppendAllText(filename, cContent + '\n', Encoding.UTF8);
+            Console.WriteLine("Progress document created successfully at: " + filename);
+            return filename;
+        }
+        public static void AppendImageToHtml(string htmlFilePath, string imagePath, bool TOC = false)
         {
             string newContent = $@"
                 <center><div class=""image-container"">
                     <img src=""{imagePath}"" alt=""Inserted Image"">
                 </div></center>";
 
-            AppendToBody(htmlFilePath, newContent, "Image HTML snippet appended successfully.");
+            AppendToBody(htmlFilePath, newContent, "Image HTML snippet appended successfully.", TOC);
         }
 
         public static void InsertQuotedText(string filePath, string quoteText, bool pageBreak, bool italic,
                                             string colorBackground, bool _borders, string textColor,
-                                            string fontType = "Garamond", int fontSize = 16)
+                                            string fontType = "Garamond", int fontSize = 16, bool TOC = true)
         {
-            string fontStyle = italic ? "font-style: italic;" : "";
-            string borderStyle = _borders ? $"border: 2px solid {textColor};" : "";
-            string backgroundColor = !string.IsNullOrEmpty(colorBackground) ? $"background-color: {colorBackground};" : "";
-            string textColorStyle = $"color: {textColor};";
-            string fontSizeStyle = $"font-size: {fontSize}px;";
-            string fontFamily = $"font-family: '{fontType}', serif;";
+            try
+            {
+                string fontStyle = italic ? "font-style: italic;" : "";
+                string borderStyle = _borders ? $"border: 2px solid {textColor};" : "";
+                string backgroundColor = !string.IsNullOrEmpty(colorBackground) ? $"background-color: {colorBackground};" : "";
+                string textColorStyle = $"color: {textColor};";
+                string fontSizeStyle = $"font-size: {fontSize}px;";
+                string fontFamily = $"font-family: '{fontType}', serif;";
 
-            string quoteHtml = $@"
+                string quoteHtml = $@"
                 <div style=""text-align: center; {borderStyle} {backgroundColor} padding: 10px; margin: 20px auto; width: 80%;"">
                     <p style=""{fontFamily} {fontSizeStyle} {fontStyle} {textColorStyle} margin: 0;"">{quoteText}</p>
                 </div>";
 
-            if (pageBreak)
-                quoteHtml += "<div style='page-break-after: always;'></div>";
-
-            AppendToBody(filePath, quoteHtml, "Quoted text added successfully.");
+                if (pageBreak)
+                    quoteHtml += "<div style='page-break-after: always;'></div>";
+                Console.WriteLine("BEFORE ADDING QUOTED TEXT:" + quoteHtml + '\n' +
+                    "FILEPATH:" + filePath);
+                AppendToBody(filePath, quoteHtml, "SUB Quoted text added successfully.", TOC);
+                Console.WriteLine("Right AFTER ADDING SUB QUOTE");
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("ERROR ADDING QUOTE:" + ex.ToString());
+            }
         }
 
         public static void AppendBoldTextToHtml(string filePath, string text, bool pageBreak,
@@ -4146,7 +4502,7 @@ public static class HtmlGenerator
         }
 
         public static void AppendTextToHtmlDocument(string filePath, string textToSynthesize,
-                                                    string fontType = "Old English Text MT", double fontSize = 14.5)
+                                                    string fontType = "Old English Text MT", double fontSize = 14.5, bool TOC = true)
         {
             string[] paragraphs = textToSynthesize.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.None);
 
@@ -4162,7 +4518,7 @@ public static class HtmlGenerator
                 }
             }
 
-            AppendToBody(filePath, formattedText.ToString(), "Formatted text added successfully.");
+            AppendToBody(filePath, formattedText.ToString(), "Formatted text added successfully.", TOC);
         }
 
         public static void AppendClosingHtmlTags(string filePath)
@@ -4193,6 +4549,11 @@ public static class HtmlGenerator
             string imagePath = GetPromptVars.MainHtmlImageTop; // Without .jpg
             string firstPageInit = GetPromptVars.FirstPageInitiation;
             string bookTitle = GetPromptVars.TitleBook;
+            string headerTitle = GetPromptVars.MainHeaderTitleOfBook;
+
+            string baseDir = AppContext.BaseDirectory;
+            string fullImagePath = System.IO.Path.Combine(baseDir, $"{imagePath}.jpg").Replace("\\", "/"); // Use forward slashes for HTML
+
 
             string emptyHtmlContent = $@"
             <!DOCTYPE html>
@@ -4202,7 +4563,11 @@ public static class HtmlGenerator
                 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
                 <title>{bookTitle}</title>
                 <style>
-                    p, table, ul, li {{
+                    p {{ 
+                        font-size: 16pt;
+                        line-height: 1.5;
+                    }}
+                    table, ul, li {{
                         font-family: 'Arial', sans-serif;
                         font-size: 14px;
                         color: #000;
@@ -4273,10 +4638,10 @@ public static class HtmlGenerator
             </head>
             <body>
             <center>
-                <h1>Perry Rhodan Universe</h1> 
+                <h1>{headerTitle}</h1> 
                 <h2>{bookTitle}</h2>
                 <div class=""image-container"">
-                    <img src=""C:\Users\Jaap\Source\Repos\AIBookEngineDumpCode\Writeyourownbooktest\bin\Debug\net8.0\{imagePath}.jpg"" alt=""Inserted Image"">
+                    <img src=""{fullImagePath}"" alt=""Inserted Image"">
                 </div>
             </center>
             <div style='page-break-after: always;'></div>
@@ -4297,47 +4662,172 @@ public static class HtmlGenerator
             Console.WriteLine("HTML document created successfully at: " + filename);
             return filename;
         }
+        public static string CreateHtmlDocumentSummary(string filename, string bookImage)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("HTML file already exists. Skipping creation.");
+                return filename;
+            }
+            string bbI = bookImage;
+            string baseDir = AppContext.BaseDirectory;
+            string imagePath = baseDir + "summary.gif"; // Without .jpg
+            string firstPageInit = GetPromptVars.FirstPageInitiation;
+            string bookTitle = GetPromptVars.TitleBook;
+            string headerTitle = GetPromptVars.MainHeaderTitleOfBook;
+
+            string fullImagePath = System.IO.Path.Combine(baseDir, $"{imagePath}.jpg").Replace("\\", "/"); // Use forward slashes for HTML
+
+
+            string emptyHtmlContent = $@"
+            <!DOCTYPE html>
+            <html lang=""en"">
+            <head>
+                <meta charset=""UTF-8"">
+                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                <title>{bookTitle}</title>
+                <style>
+                    p {{ 
+                        font-size: 16pt;
+                        line-height: 1.5;
+                    }}
+                    table, ul, li {{
+                        font-family: 'Arial', sans-serif;
+                        font-size: 14px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    ul {{
+                        font-size: 12px;
+                    }}
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 16px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .text-container {{
+                        width: 95%;
+                        margin: auto;
+                        margin-bottom: 40mm;
+                        padding: 2px;
+                        font-family: Arial, sans-serif;
+                        font-size: 12pt;
+                        line-height: 1.5;
+                        text-align: justify;
+                    }}
+                    .a4-page {{
+                        width: 210mm;
+                        height: 297mm;
+                        max-width: 210mm;
+                        aspect-ratio: 210 / 297;
+                        margin: auto;
+                        padding: 5mm 5mm 20mm 5mm;
+                        background: white;
+                        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                    }}
+                    @media print {{
+                        body {{
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .a4-page {{
+                            width: 210mm;
+                            height: 297mm;
+                            max-width: 210mm;
+                            aspect-ratio: 210 / 297;
+                            margin: auto;
+                            padding: 5mm 5mm 20mm 5mm;
+                            box-shadow: none;
+                        }}
+                    }}
+                    .image-container {{
+                        text-align: center;
+                        margin: 10px auto;
+                        border: 1px solid black;
+                        display: inline-block;
+                        padding: 6px;
+                    }}
+                    .image-container img {{
+                        max-width: 100%;
+                        height: auto;
+                    }}
+                </style>
+            </head>
+            <body>
+            <center>
+                <h1>{headerTitle}</h1> 
+                <h2>{bookTitle}</h2>
+                <div class=""image-container"">
+                    <img src=""{imagePath}"" alt=""Inserted Image"">
+                </div>
+            </center>
+            <div style='page-break-after: always;'></div>
+            <center>
+            <div class=""image-container"">
+                    <img src=""{bbI}"" alt=""Inserted Image"">
+                </div>
+            </center>
+            <div class='text-container'>
+       
+            </div>
+            </body>
+            </html>";
+
+            File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
+            Console.WriteLine("HTMLSummary  document created successfully at: " + filename);
+            return filename;
+        }
         public static List<string> tocTitles = new List<string>();
         public static string tocHead = "\n<div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div>\n";
-        public static void AppendToBody(string filePath, string contentToAdd, string successMessage)
+        public static void AppendToBody(string filePath, string contentToAdd, string successMessage, bool TOC = true)
         {
             if (!File.Exists(filePath)) return;
 
             string htmlContent = File.ReadAllText(filePath, Encoding.UTF8);
 
-            // Find the position of the text-container div
-            int textContainerIndex = htmlContent.IndexOf("<div class='text-container'>", StringComparison.OrdinalIgnoreCase);
-            if (textContainerIndex != -1)
+            if (TOC)
             {
-                int tocIndex = htmlContent.IndexOf("<div id=\"toc\">", StringComparison.OrdinalIgnoreCase);
-                if (tocIndex == -1)
+                // Find the position of the text-container div
+                int textContainerIndex = htmlContent.IndexOf("<div class='text-container'>", StringComparison.OrdinalIgnoreCase);
+                if (textContainerIndex != -1)
                 {
-                    // Insert TOC before the text-container div
-                    htmlContent = htmlContent.Insert(textContainerIndex, "\n" +
-                        "<div class='text-container'><div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div></div>\n");
-                }
-            }
-
-            // Process H1 tags for TOC (handling inline styles)
-            var matches = Regex.Matches(contentToAdd, "<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            foreach (Match match in matches)
-            {
-                string headingText = Regex.Replace(match.Groups[1].Value, "<.*?>", "").Trim(); // Remove inner HTML tags
-                string anchorId = Regex.Replace(headingText, "[^a-zA-Z0-9]", "_").ToLower();
-                string anchorTag = $"<h1 id=\"{anchorId}\" {match.Value.Substring(3)}";
-
-                // Replace original H1 with anchored version
-                contentToAdd = contentToAdd.Replace(match.Value, anchorTag);
-
-                // Add TOC entry
-                string tocEntry = $"<li><a href=\"#{anchorId}\">{headingText}</a></li>";
-                int tocListIndex = htmlContent.IndexOf("<div id=\"toc\"><h2>Table of Contents</h2><ul>", StringComparison.OrdinalIgnoreCase);
-                if (tocListIndex != -1)
-                {
-                    int ulEndIndex = htmlContent.IndexOf("</ul>", tocListIndex, StringComparison.OrdinalIgnoreCase);
-                    if (ulEndIndex != -1)
+                    int tocIndex = htmlContent.IndexOf("<div id=\"toc\">", StringComparison.OrdinalIgnoreCase);
+                    if (tocIndex == -1)
                     {
-                        htmlContent = htmlContent.Insert(ulEndIndex, tocEntry + "\n");
+                        // Insert TOC before the text-container div
+                        htmlContent = htmlContent.Insert(textContainerIndex, "\n" +
+                            "<div class='text-container'><div id=\"toc\"><h2>Table of Contents</h2><ul></ul></div></div>\n");
+                    }
+                }
+
+                // Process H1 tags for TOC (handling inline styles)
+                var matches = Regex.Matches(contentToAdd, "<h1[^>]*>(.*?)</h1>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                foreach (Match match in matches)
+                {
+                    string headingText = Regex.Replace(match.Groups[1].Value, "<.*?>", "").Trim(); // Remove inner HTML tags
+                    string anchorId = Regex.Replace(headingText, "[^a-zA-Z0-9]", "_").ToLower();
+                    string anchorTag = $"<h1 id=\"{anchorId}\" {match.Value.Substring(3)}";
+
+                    // Replace original H1 with anchored version
+                    contentToAdd = contentToAdd.Replace(match.Value, anchorTag);
+
+                    // Add TOC entry
+                    string tocEntry = $"<li><a href=\"#{anchorId}\">{headingText}</a></li>";
+                    int tocListIndex = htmlContent.IndexOf("<div id=\"toc\"><h2>Table of Contents</h2><ul>", StringComparison.OrdinalIgnoreCase);
+                    if (tocListIndex != -1)
+                    {
+                        int ulEndIndex = htmlContent.IndexOf("</ul>", tocListIndex, StringComparison.OrdinalIgnoreCase);
+                        if (ulEndIndex != -1)
+                        {
+                            htmlContent = htmlContent.Insert(ulEndIndex, tocEntry + "\n");
+                        }
                     }
                 }
             }
@@ -4414,26 +4904,7 @@ public static class HtmlGenerator
 
             Console.WriteLine("PDF created successfully.");
         }
-        public static void ConvertToPdf_IronPdf(string html, string pdf)
-        {
-            // Path to your HTML file
-            string htmlFilePath = html;
-            string pdfPath = pdf;
 
-            // Read the HTML content from file
-            string htmlContent = File.ReadAllText(htmlFilePath);
-
-            // Create the renderer
-            var renderer = new HtmlToPdf();
-
-            // Convert the HTML to PDF
-            var pdfIron = renderer.RenderHtmlAsPdf(htmlContent);
-
-            // Save the PDF
-            pdfIron.SaveAs(pdfPath);
-
-            Console.WriteLine("Iron PDF created from HTML file.");
-        }
         public static void ConvertToPdf_Dink(string html, string pdf, string _baseUrl)
         {
             // Path to your HTML file
@@ -4464,43 +4935,203 @@ public static class HtmlGenerator
     }
     public static class GetPromptVars
     {
-        private static string dataFileGenericPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cbookdata.txt";
+        private static string dataFilePath = GlobalBlobber.readFileFromBlob("Cbookdata.txt", "mindscriptedconfig");
+
         public static string MainHtmlImageTop { get; set; } = "";
         public static string TitleBook { get; set; } = "";
         public static string FirstPageInitiation { get; set; } = "";
-        public static void LoadDataGenericPromptVars()
-        {
-            if (!File.Exists(dataFileGenericPrompts)) return;
+        public static string MainHeaderTitleOfBook { get; set; } = "";
+        public static string HeaderTitleOfBook { get; set; } = "";
+        public static string NameOfBook { get; set; } = "";
+        public static string PageNumbersOfBook { get; set; } = "";
+        public static string FileNameBlob { get; set; } = "";
 
-            string[] lines = File.ReadAllLines(dataFileGenericPrompts);
-            if (lines.Length >= 3)
-            {
-                MainHtmlImageTop = lines[0];
-                TitleBook = lines[1];
-                FirstPageInitiation = lines[2].Replace("\\n", Environment.NewLine);
-            }
+        public static async Task LoadDataGenericPromptVars(string fileName = "Cbookdata.txt")
+        {
+            string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                Secrets.cloudStorageConnString,
+                "mindscriptedconfig",
+                fileName
+            );
+
+            // Assign safely based on line count
+            if (lines.Length > 0) MainHtmlImageTop = lines[0];
+            if (lines.Length > 1) TitleBook = lines[1];
+            if (lines.Length > 2) FirstPageInitiation = lines[2];
+            if (lines.Length > 3) MainHeaderTitleOfBook = lines[3];
+            if (lines.Length > 4) NameOfBook = lines[4];
+            if (lines.Length > 5) PageNumbersOfBook = lines[5];
+            if (lines.Length > 5) FileNameBlob = lines[6];
         }
-        private static string dataFileDocHtmlPrompts = "C:\\Users\\Jaap\\Source\\Repos\\AIBookEngineDumpCode\\PromptConfig\\bin\\Debug\\net8.0-windows\\Cdochtml.txt";
-        public static string TitlePrefix { get; set; } = "";
-        public static string ImagePrefix { get; set; } = "";
-        public static string FirstForePrompt { get; set; } = "";
-        public static string SecondRunningPrompt { get; set; } = "";
-        public static string ExtraTouch { get; set; } = "";
-        public static void LoadDataDocHtmlPromptVars()
+
+        public static string TitlePrefix { get; private set; } = "";
+        public static string ImagePrefix { get; private set; } = "";
+        public static string FirstForePrompt { get; private set; } = "";
+        public static string SecondRunningPrompt { get; private set; } = "";
+        public static string ExtraTouch { get; private set; } = "";
+
+        private static bool _promptDataLoaded = false;
+
+        public static async Task LoadDataDocHtmlPromptVars(string fileName = "Cdochtml.txt")
         {
+            if (_promptDataLoaded) return;
 
-            if (!File.Exists(dataFileDocHtmlPrompts)) return;
+            string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                Secrets.cloudStorageConnString,
+                "mindscriptedconfig",
+                fileName
+            );
 
-            string[] lines = File.ReadAllLines(dataFileDocHtmlPrompts);
-            if (lines.Length >= 5)
+            if (lines.Length > 0) TitlePrefix = lines[0];
+            if (lines.Length > 1) ImagePrefix = lines[1];
+            if (lines.Length > 2) FirstForePrompt = lines[2];
+            if (lines.Length > 3) SecondRunningPrompt = lines[3];
+            if (lines.Length > 4) ExtraTouch = lines[4];
+
+            _promptDataLoaded = true;
+        }
+        public static string BookDescription { get; private set; } = "";
+        public static string BookPlotLine { get; private set; } = "";
+        public static string SteerPlot { get; private set; } = "";
+        public static string SteeringWriters { get; private set; } = "";
+        public static string BookSteeringWheelUniverse { get; private set; } = "";
+
+        private static bool _plotDataLoaded = false;
+
+        public static async Task LoadPlotDataDocHtmlPlotVars(string fileName = "Pdochtml.txt")
+        {
+            if (_plotDataLoaded) return;
+
+            try
             {
-                TitlePrefix = lines[0];
-                ImagePrefix = lines[1];
-                FirstForePrompt = lines[2];
-                SecondRunningPrompt = lines[3];
-                ExtraTouch = lines[4];
+                string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                    Secrets.cloudStorageConnString,
+                    "mindscriptedconfig",
+                    fileName
+                );
+
+                if (lines.Length > 0) BookDescription = lines[0].Trim();
+                if (lines.Length > 1) BookPlotLine = lines[1].Trim();
+                if (lines.Length > 2) SteerPlot = lines[2].Trim();
+                if (lines.Length > 3) SteeringWriters = lines[3].Trim();
+                if (lines.Length > 4) BookSteeringWheelUniverse = lines[4].Trim();
+
+                _plotDataLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error loading plot config from blob: " + ex.Message);
             }
         }
     }
+    /// <summary>
+    /// Provides methods to translate text to a specified language.
+    /// </summary>
+    public static class Translator
+    {
+        /// <summary>
+        /// The subscription key required to authenticate API requests.
+        /// This key is used for interacting with various services and APIs that require a subscription for access.
+        /// Typically, the subscription key is a unique string provided by the service provider.
+        /// </summary>
+        private static readonly string subscriptionKey = Secrets.subscriptionKey;
+
+        /// <summary>
+        /// The endpoint for accessing the translation API service.
+        /// </summary>
+        private static readonly string endpoint = Secrets.enddpoint;
+
+        /// <summary>
+        /// Represents the region information required for making API calls to the translation service.
+        /// This value is used as the subscription region in the HTTP request headers when
+        /// interacting with the translation API.
+        /// </summary>
+        private static readonly string location = Secrets.llocation;
+
+        /// <summary>
+        /// Translates the provided text to the language specified in the global settings.
+        /// </summary>
+        /// <param name="inputText">The text to be translated.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the translated text.</returns>
+        public static async Task<string> TranslateTextToGiven(string inputText, string _language)
+        {
+            string route = "/translate?api-version=3.0&from=en&to=" + _language;
+
+            object[] body = new object[] { new { Text = inputText } };
+            var requestBody = JsonConvert.SerializeObject(body);
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage())
+            {
+                request.Method = HttpMethod.Post;
+                request.RequestUri = new Uri(endpoint + route);
+                request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+                request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
+                request.Headers.Add("Ocp-Apim-Subscription-Region", location);
+
+                HttpResponseMessage response = await client.SendAsync(request);
+                string result = await response.Content.ReadAsStringAsync();
+                var translationResult = JsonConvert.DeserializeObject<TranslationResult[]>(result);
+                return translationResult[0].Translations[0].Text;
+            }
+        }
+
+        /// <summary>
+        /// Represents the result of a translation operation.
+        /// </summary>
+        private class TranslationResult
+        {
+            /// <summary>
+            /// Gets or sets the translation results from the API response.
+            /// </summary>
+            public Translation[] Translations { get; set; }
+        }
+
+        /// <summary>
+        /// Represents a translation result with the translated text.
+        /// </summary>
+        private class Translation
+        {
+            /// <summary>
+            /// Gets or sets the text content used in translation results.
+            /// </summary>
+            /// <value>
+            /// A string representing the translated text.
+            /// </value>
+            public string Text { get; set; }
+        }
+    }
+    public static class HtmlToPdfGeneratorDinky
+    {
+        private static readonly IConverter _converter = new SynchronizedConverter(new PdfTools());
+
+        public static void ConvertHtmlToPdf(string html, string outputPath)
+        {
+            var doc = new HtmlToPdfDocument()
+            {
+                GlobalSettings = {
+                PaperSize = PaperKind.A4,
+                Orientation = DinkToPdf.Orientation.Portrait,
+                Out = outputPath,
+                Margins = new MarginSettings { Top = 25, Bottom = 25, Left = 25, Right = 25 } // in millimeters
+    
+            },
+                Objects = {
+                new ObjectSettings()
+                {
+                    HtmlContent = html,
+                    WebSettings = {
+                        DefaultEncoding = "utf-8",
+                        LoadImages = true
+                    }
+                }
+            }
+            };
+
+            _converter.Convert(doc);
+        }
+    }
+
 }
+
 

@@ -6,22 +6,29 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Runtime.CompilerServices;
 using System.Net.NetworkInformation;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 
 
 namespace PromptConfig
 {
+   
     public static class GlobalVars
     {
-        
+
         public static string MainHtmlImageAtTop { get; set; } = "Create a Isaac Asimov Caves of Steel geometry mathematical oriented SF image";
         public static string TitleOfBook { get; set; } = "Asimov In Space";
         public static string FirstPageInitiation { get; set; } =
             $@"<p style=""font-family: 'Garamond', serif; font-size: 25px; font-style: italic; color: black; margin: 0;"">
-                Inspired by the Caves of Steel Universe. 
-                <br />In the style of<br /><br />
-                <br />Isaac Asimov.<br /><br /><br />
-                Images based on Isaac Asimov.
-            </p>";
+            Inspired by the Caves of Steel Universe. 
+            <br />In the style of<br /><br />
+            <br />Isaac Asimov.<br /><br /><br />
+            Images based on Isaac Asimov.
+        </p>";
+        public static string HeaderTitleOfBook { get; set; } = "";
+        public static string NameOfBook { get; set; } = "";
+        public static string NumberOfPages { get; set; } = "";
+
         public static string BookDescription { get; set; } = "A global book description for a book about Isaac Asimov.";
         public static string BookPlot { get; set; } = "A global plotline for a book about Isaac Asimov.";
         public static string BookPlotSteering { get; set; } = "Write with characters from the Isaac Asimov Caves of Steel Universe.";
@@ -97,9 +104,9 @@ namespace PromptConfig
                         model = modell, // Change to "o1" if needed
                         messages = new[]
                         {
-                    new { role = "system", content = "You are a helpful assistant." },
-                    new { role = "user", content = prompt }
-                },
+                new { role = "system", content = "You are a helpful assistant." },
+                new { role = "user", content = prompt }
+            },
                         max_completion_tokens = 100000
                     };
 
@@ -145,6 +152,6 @@ namespace PromptConfig
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
         }
+
     }
 }
-
