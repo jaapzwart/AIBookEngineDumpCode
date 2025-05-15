@@ -2200,37 +2200,17 @@ class Program
 
                         if (liness >= 1) // Not the first chapter
                         {
-                            //------------------------
-                            // Do the chapter stack
-                            //------------------------
-                            if (liness <= 16) // Build the first three previous chapters
+                            // Always add the latest chapter first
+                            responseLines.Add(getResponse);
+
+                            // If too many, trim back to last 15
+                            if (responseLines.Count > 15)
                             {
-                                responseLines.Add(getResponse);
-                                getResponseLiness = "";
-                                foreach (string res in responseLines)
-                                {
-                                    getResponseLiness += res + '\n';
-                                }
+                                responseLines = responseLines.Skip(responseLines.Count - 15).ToList();
                             }
-                            else // Place the last two chapters as first two and add last chapter as last
-                            {
-                                getResponseLiness = "";
-                                List<string> resTemp = new List<string>();
-                                foreach (string res in responseLines)
-                                {
-                                    resTemp.Add(res);
-                                }
-                                responseLines.Clear();
-                                for (int iR = 1; iR <= 15; iR++)
-                                {
-                                    responseLines.Add((string)resTemp[iR]);
-                                }
-                                responseLines.Add(getResponse);
-                                foreach (string res in responseLines)
-                                {
-                                    getResponseLiness += res + '\n';
-                                }
-                            }
+
+                            getResponseLiness = string.Join('\n', responseLines) + '\n';
+
                             foreRunning = GetPromptVars.SecondRunningPrompt;
 
                             // Enhanced prompt with full context and anti-repetition instruction
@@ -2305,6 +2285,8 @@ class Program
                             getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "Dutch") + "\n\n";
                         else if (_AILanguage.Contains("de"))
                             getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "German") + "\n\n";
+                        else if (_AILanguage.Contains("ru"))
+                            getResponse = await LargeGPT.GetGoogleLarge(front + sFore, "Russian") + "\n\n";
                         else
                             getResponse = await LargeGPT.GetGoogleLarge(front + sFore) + "\n\n";
                     }
@@ -2348,7 +2330,11 @@ class Program
                             _translatedTitle = iimage;
                         else if (_AILanguage.Contains("nl"))
                             _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
-                        iimage = _translatedTitle;
+                        else if (_AILanguage.Contains("de"))
+                            _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        else if (_AILanguage.Contains("ru"))
+                            _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        iimage = _translatedTitle;  
                     }
 
                     sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
@@ -2435,6 +2421,10 @@ class Program
                         _translatedQuote = getQuote;
                     else if (_AILanguage.Contains("nl"))
                         _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                    else if (_AILanguage.Contains("de"))
+                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                    else if (_AILanguage.Contains("ru"))
+                        _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
                     sQuote = _translatedQuote;
                     HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, true, true, "white", false, "black", "Garamond", 28, false);
                     
@@ -2449,6 +2439,10 @@ class Program
                         if (_AILanguage.Contains("xxx"))
                             _translatedQuote = sQuote;
                         else if (_AILanguage.Contains("nl"))
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                        else if (_AILanguage.Contains("de"))
+                            _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
+                        else if (_AILanguage.Contains("ru"))
                             _translatedQuote = await Writeyourownbooktest.Translator.TranslateTextToGiven(sQuote, _AILanguage);
                         sQuote = _translatedQuote;
                         Console.WriteLine("After translating getQuote");

@@ -77,6 +77,8 @@ using Aspose.Words.LowCode;
 using Google.Cloud.Translation.V2;
 using Aspose.Pdf.Plugins;
 using static Community.CsharpSqlite.Sqlite3;
+using Polly;
+using Polly.Retry;
 
 
 namespace Writeyourownbooktest
@@ -4129,38 +4131,39 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
-        public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
+    
+
+    public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
+    {
+        string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+        try
         {
-            string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
-            try
+            // 1. Vertex AI Configuration
+            string projectId = Secrets.GoogleProjectID;
+            string location = "us-central1";
+            string publisher = "google";
+            string modelId = "gemini-2.5-pro-exp-03-25";
+            string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
+            var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+            Console.WriteLine($"API Endpoint: {apiEndpoint}");
+            Console.WriteLine($"Credentials Path: {credentialsFilePath}");
+
+            // 2. Set up authentication
+            var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+            var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+            var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+            Console.WriteLine("Access Token retrieved successfully");
+
+            // 3. Prepare the Request
+            string prompt = textToTranslate ?? "Tell me about stars.";
+            string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. " +
+                              $"Please answer the following in {answerLanguage}: {prompt}";
+
+            var requestData = new
             {
-                // 1. Vertex AI Configuration
-                string projectId = Secrets.GoogleProjectID;
-                string location = "us-central1";
-                string publisher = "google";
-                string modelId = "gemini-2.5-pro-exp-03-25";
-                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
-                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
-
-                Console.WriteLine($"API Endpoint: {apiEndpoint}");
-                Console.WriteLine($"Credentials Path: {credentialsFilePath}");
-
-                // 2. Set up authentication
-                var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
-                var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
-                var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
-                Console.WriteLine("Access Token retrieved successfully");
-
-                // 3. Prepare the Request
-                string prompt = textToTranslate ?? "Tell me about stars.";
-                string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs." +
-                    $"Please answer the following in {answerLanguage}: {prompt}";
-                Console.WriteLine($"Input Question: {question}");
-
-                var requestData = new
+                contents = new[]
                 {
-                    contents = new[]
-                    {
                 new
                 {
                     role = "user",
@@ -4170,55 +4173,67 @@ namespace Writeyourownbooktest
                     }
                 }
             },
-                    generationConfig = new
-                    {
-                        temperature = 0.4,
-                        maxOutputTokens = 64000,
-                        topP = 0.95,
-                        topK = 40
-                    }
-                };
-
-                string jsonContent = JsonConvert.SerializeObject(requestData);
-                Console.WriteLine($"Request JSON: {jsonContent}");
-
-                // 4. Make the API call
-                using (var client = new HttpClient())
+                generationConfig = new
                 {
-                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-                    var response = await client.PostAsync(apiEndpoint, content);
-                    string result = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Raw API Response: {result}");
-                    Console.WriteLine($"HTTP Status Code: {response.StatusCode}");
+                    temperature = 0.4,
+                    maxOutputTokens = 64000,
+                    topP = 0.95,
+                    topK = 40
+                }
+            };
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        throw new Exception($"API request failed with status {response.StatusCode}: {result}");
-                    }
+            string jsonContent = JsonConvert.SerializeObject(requestData);
 
-                    // 5. Parse the response
-                    var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
-                    if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+            // 4. Define Polly Retry Policy
+            var retryPolicy = Policy
+                .Handle<HttpRequestException>()
+                .OrResult<HttpResponseMessage>(r => (int)r.StatusCode == 429) // Handle 429 specifically
+                .WaitAndRetryAsync(
+                    retryCount: 5,
+                    sleepDurationProvider: attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)), // Exponential backoff: 2s, 4s, 8s, etc.
+                    onRetry: (outcome, timespan, retryAttempt, context) =>
                     {
-                        string answer = responseData.Candidates[0].Content.Parts[0].Text;
-                        Console.WriteLine($"Extracted Answer: {answer}");
-                        return answer;
-                    }
-                    else
-                    {
-                        throw new Exception("No valid response from the API: " + result);
-                    }
+                        Console.WriteLine($"Retry {retryAttempt} after {timespan.TotalSeconds}s due to {(outcome.Exception != null ? outcome.Exception.Message : outcome.Result.StatusCode.ToString())}");
+                    });
+
+            // 5. Make the API call with Polly
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                var response = await retryPolicy.ExecuteAsync(() => client.PostAsync(apiEndpoint, content));
+                string result = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"HTTP Status Code after retries: {response.StatusCode}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"API request failed with status {response.StatusCode}: {result}");
+                }
+
+                var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
+                if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+                {
+                    string answer = responseData.Candidates[0].Content.Parts[0].Text;
+                    Console.WriteLine($"Extracted Answer: {answer}");
+                    return answer;
+                }
+                else
+                {
+                    throw new Exception("No valid response from the API: " + result);
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception: {ex.Message}");
-                return $"Error: {ex.Message}";
-            }
         }
-        // We want really different titles.
-        public static int LevenshteinDistance(string s, string t)
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+            return $"Error: {ex.Message}";
+        }
+    }
+
+
+    // We want really different titles.
+    public static int LevenshteinDistance(string s, string t)
         {
             int[,] d = new int[s.Length + 1, t.Length + 1];
 
