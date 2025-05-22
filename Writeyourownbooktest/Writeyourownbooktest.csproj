@@ -39,6 +39,7 @@
     <PackageReference Include="OpenTextSummarizer" Version="1.0.2" />
     <PackageReference Include="PDFsharp" Version="6.1.1" />
     <PackageReference Include="Polly" Version="8.5.2" />
+    <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
     <PackageReference Include="Python.Runtime.NETStandard" Version="3.7.1" />
     <PackageReference Include="Python37" Version="1.0.0.1" />
     <PackageReference Include="pythonnet" Version="3.0.3" />

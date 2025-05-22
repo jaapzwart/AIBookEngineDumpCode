@@ -2164,107 +2164,86 @@ class Program
                 int liness = 0;
                 int linessResponse = 0;
                 string getResponseLiness = "";
-                List<string> responseLines = new List<string>(); // To store all chapters so far
+                //List<string> responseLines = new List<string>(); // To store all chapters so far
+                Queue<string> responseLines = new Queue<string>();
                 List<string> chaptersSoFar = new List<string>(); // To make sure the titles are different from each other.
                 string getResponse = "";
                 string sFore = "";
-                string previousChapterSummary = ""; // To store a concise summary of the previous chapter
                 string overallPlotline = "<html><body><br>" +
                     "<h1>Summary of book</h1><hr>" +
                     GetPromptVars.NameOfBook + "<hr>"; // Initial plotline, will evolve
                 string overallPlotLineSummary = "";
 
-                string summaryAnPlotPossibilities = "";
-                string chosenWayForward = "";
+               int chapterCount = Convert.ToInt16(GetPromptVars.PageNumbersOfBook);
 
-                string sPrevious = "";
-                string line = "";
-                int chapterCount = Convert.ToInt16(GetPromptVars.PageNumbersOfBook);
-
+                // Enhanced thriller chapter generator with refined narrative pacing and structure
                 for (int i = 0; i < chapterCount; i++)
                 {
                     sFore = "";
-                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:"
-                        + liness.ToString() + " of total:" + chapterCount.ToString());
+                    await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:" + liness.ToString() + " of total:" + chapterCount.ToString());
 
-                    int introLimit = chapterCount / 3;
-                    int midLimit = (chapterCount * 2) / 3;
-                    string chapterStage = "";
-                    if (i < introLimit) chapterStage = "INTRO";
-                    else if (i < midLimit) chapterStage = "MIDDLE";
-                    else chapterStage = "END";
+                    string chapterStage;
+                    if (i == 0)
+                        chapterStage = "PROLOGUE";
+                    else if (i < chapterCount / 3)
+                        chapterStage = "INTRO";
+                    else if (i < (chapterCount * 2) / 3)
+                        chapterStage = "RISING_ACTION";
+                    else if (i == chapterCount - 1)
+                        chapterStage = "CLIMAX_FINAL";
+                    else
+                        chapterStage = "FALLING_ACTION";
 
                     if (_examples.Contains("dochtml"))
                     {
                         string foreRunning = "";
 
-                        if (liness >= 1) // Not the first chapter
+                        if (liness >= 1)
                         {
-                            // Always add the latest chapter first
-                            responseLines.Add(getResponse);
-
-                            // If too many, trim back to last 15
-                            if (responseLines.Count > 15)
-                            {
-                                responseLines = responseLines.Skip(responseLines.Count - 15).ToList();
-                            }
+                            responseLines.Enqueue(getResponse);
+                            if (responseLines.Count > 8)
+                                responseLines.Dequeue(); // remove oldest
 
                             getResponseLiness = string.Join('\n', responseLines) + '\n';
 
-                            foreRunning = GetPromptVars.SecondRunningPrompt;
+                            foreRunning = "Write a complete and immersive thriller chapter of 6,000–8,000 words." + 
+                                GetPromptVars.SecondRunningPrompt;
 
-                            // Enhanced prompt with full context and anti-repetition instruction
                             sFore += " " + foreRunning +
-                                 " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
-                                 " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
-                                 " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
-                                 " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
-                                 " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+                                $" Create a chapter that continues naturally from the previous: '{responseLines.Last()}'. " +
+                                $" Use the full context so far: '{getResponseLiness}' and avoid repetition. Expand the plot with rich progression.";
+
+                            string thematicSummary = await LargeGPT.CallLargeChatGPT(
+                                "What unresolved questions or themes emerge from this story so far? Here's the full plotline: " + getResponseLiness,
+                                "o3-mini");
+
+                            sFore += " Reflect these unresolved questions or themes: '" + thematicSummary + "'.";
                         }
-                        else // First chapter
+                        else
                         {
-                            foreRunning = GetPromptVars.FirstForePrompt;
+                            foreRunning = "Write a complete and immersive thriller chapter of 6,000–8,000 words." + 
+                                GetPromptVars.FirstForePrompt;
                             sFore += " " + foreRunning +
-                                     " Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + GetPromptVars.BookPlotLine + "'." +
-                                     " Use this opening not merely as a starting point, but as a threshold—introducing the world, the protagonist, and the first sparks of tension that hint at larger forces at play." +
-                                     " Allow the narrative to unfold with a dynamic structure, unconstrained by a strict chronological order—play with time through memories, visions, or foreshadowing to weave a layered introduction." +
-                                     " This chapter should not resolve key plotlines, but rather ignite curiosity and lay the emotional and thematic groundwork for the journey ahead.";
-
+                                " Begin the story with an immersive, layered introduction based on this plotline: '" + GetPromptVars.BookPlotLine + "'. " +
+                                " Introduce mystery, tension, and intrigue. Use non-linear elements like foreshadowing or memory.";
                         }
 
-                        // Stage-specific instructions to guide the story arc
-                        switch (chapterStage)
+                        // Stage-specific narrative instructions
+                        sFore += chapterStage switch
                         {
-                            case "INTRO":
-                                sFore += " Continue where the last chapter ended." +
-                                    " Introduce the main characters, setting, and premise. Establish the initial situation and hint at the central conflict. Provide enough context to engage the reader and set expectations for the journey ahead.";
-                                break;
+                            "PROLOGUE" => " Set up an atmospheric, mysterious foundation. Introduce a disturbing detail or hint of a hidden truth.",
+                            "INTRO" => " Build early tension. Present key characters, settings, and possible secrets. Foreshadow the central conflict subtly.",
+                            "RISING_ACTION" => " Escalate conflicts and deepen the mystery. Reveal twists, hidden motives, and dilemmas. Keep the pace dynamic.",
+                            "FALLING_ACTION" => " Begin converging plotlines. Let tension simmer as characters deal with consequences and shifting alliances.",
+                            "CLIMAX_FINAL" => " Deliver a satisfying resolution. Tie together major arcs and reveal hidden truths. The ending should feel earned.",
+                            _ => ""
+                        };
 
-                            case "MIDDLE":
-                                sFore += " Continue where the last chapter ended." +
-                                    "Develop the main conflict and expand the story world. Show how characters respond to increasing challenges. Introduce new complications, deepen relationships, and shift the story toward a turning point.";
-                                break;
-
-                            case "END":
-                                if (i == chapterCount - 1) // Final chapter
-                                {
-                                    sFore += " Continue where the last chapter ended." +
-                                        "Conclude the story with a satisfying resolution. Address the main conflict and bring character arcs to a logical and meaningful end. Ensure the ending aligns with the tone and structure of the overall narrative.";
-                                }
-                                else
-                                {
-                                    sFore += " Continue where the last chapter ended:" + responseLines.Last() +
-                                        "Raise the tension and push the story toward its conclusion. Begin resolving subplots and highlight consequences of earlier actions. Prepare the stage for the final chapter by tightening the focus on the central narrative.";
-                                }
-                                break;
-                        }
-
-                        string ExtraCatch = GetPromptVars.ExtraTouch;
-                        sFore += " " + ExtraCatch;
+                        sFore += " " + GetPromptVars.ExtraTouch;
                     }
 
-                    string front = "";
-                    front += "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
+                    string front =
+                        "Make sure the text is put in an easy to read overview. Like this:<p>paragraph</p> but do not mention the chapter number and title at the start of the chapter.";
 
                     if (_AIProvider.Contains("o1"))
                         getResponse = await LargeGPT.CallLargeChatGPT(front + sFore, "o1") + "\n\n";
@@ -2296,7 +2275,7 @@ class Program
 
                     // Update overallPlotline with a summary of key developments
                     string plotUpdate = await LargeGPT.CallLargeChatGPT(
-                        "Summarize the key plot developments in this chapter in 1-2 sentences: '" + getResponse + "'",
+                        "Summarize the key plot developments in this chapter in 1 plain paragraph: '" + getResponse + "'",
                         "o3-mini");
                     overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
 
@@ -2329,11 +2308,17 @@ class Program
                         if (_AILanguage.Contains("xxx"))
                             _translatedTitle = iimage;
                         else if (_AILanguage.Contains("nl"))
+                        {
                             _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        }
                         else if (_AILanguage.Contains("de"))
+                        {
                             _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        }
                         else if (_AILanguage.Contains("ru"))
+                        { 
                             _translatedTitle = await Writeyourownbooktest.Translator.TranslateTextToGiven(iimage, _AILanguage);
+                        }
                         iimage = _translatedTitle;  
                     }
 
@@ -2360,6 +2345,7 @@ class Program
                                 Simage = await GetDalleGood(makingImage + iimage);
                                 if (Simage.Contains("Bad Request"))
                                 {
+                                    sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
                                     Simage = await GetDalleGood(makingImage + sQuote);
                                 }
                                 await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
@@ -2372,6 +2358,7 @@ class Program
                                 Simage = await GetDalleGood(makingImage + iimage);
                                 if (Simage.Contains("Bad Request"))
                                 {
+                                    sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
                                     Simage = await GetDalleGood(makingImage + iimage);
                                 }
                                 await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
@@ -2393,6 +2380,7 @@ class Program
                                 Simage = await GetDalleGood(makingImage + iimage);
                                 if (Simage.Contains("Bad Request"))
                                 {
+                                    iimage = HtmlGenerator.EnsureJpgExtension(sClean);
                                     Simage = await GetDalleGood(makingImage + sClean);
                                 }
                                 await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
@@ -2405,7 +2393,7 @@ class Program
                     {
                         HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>", 
                             "MAIN Quoted text added successfully.", false);
-                        HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
+                       HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
                     }
 
                     if (doImage)
@@ -2471,12 +2459,23 @@ class Program
                 htmlContent = File.ReadAllText(outputFilePathHtml);
                 string htmlPathBookImage = GetPromptVars.MainHtmlImageTop;
                 string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
-                plainText = System.Net.WebUtility.HtmlDecode(plainText);
+                //plainText = System.Net.WebUtility.HtmlDecode(plainText);
+                plainText = overallPlotLineSummary;
 
                 // Replace with actual call to AI
-                string summary_ = await LargeGPT.GetGrok("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
-                    " Give only the answer, no leading text or after text. Create a summary of 5 paragraphs for this book." +
-                    plainText, "grok-3-mini-beta");
+                string summary_ = await LargeGPT.CallLargeChatGPT("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                    " Give only the paragraphs, no leading text or after text or paragraph numbers. Create a summary of 5 paragraphs for this book." +
+                    plainText, "o3-mini");
+                string _translatedSummary = "";
+                if (_AILanguage.Contains("xxx"))
+                    _translatedSummary = summary_;
+                else if (_AILanguage.Contains("nl"))
+                    _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+                else if (_AILanguage.Contains("de"))
+                    _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+                else if (_AILanguage.Contains("ru"))
+                    _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+                summary_ = _translatedSummary;
 
                 // Format into C#-compatible string variable
                 summary_ = summary_.Replace("Table of Contents", "");
@@ -2503,6 +2502,60 @@ class Program
             {
                 Console.WriteLine("Error:" + ex.Message);
             }
+        }
+        else if (args[0] != null && args[0].Contains("createSummary"))
+        {
+            // "talkBookCompleteDynamic" "dochtml" "Google" "nl" "true"
+
+            await GetPromptVars.LoadDataGenericPromptVars();
+            await GetPromptVars.LoadDataDocHtmlPromptVars();
+            await GetPromptVars.LoadPlotDataDocHtmlPlotVars();
+
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string filename = "summ";
+            string chapterTitlesPathHtml = filename + ".html";
+            
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string chapterTitlesPathHtmlSummary = "summary_talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
+
+            string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
+            string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
+
+            string htmlContent = File.ReadAllText(outputFilePathHtml);
+            string htmlPathBookImage = GetPromptVars.MainHtmlImageTop;
+
+            string _AILanguage = "nl";
+            // Replace with actual call to AI
+            string summary_ = await LargeGPT.CallLargeChatGPT("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                    " Give only the paragraphs, no leading text or after text or paragraph numbers. Create a summary of 5 paragraphs for this book." +
+                    htmlContent, "o3-mini");
+            string _translatedSummary = "";
+            if (_AILanguage.Contains("xxx"))
+                _translatedSummary = summary_;
+            else if (_AILanguage.Contains("nl"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+            else if (_AILanguage.Contains("de"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+            else if (_AILanguage.Contains("ru"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+
+            // Format into C#-compatible string variable
+            summary_ = summary_.Replace("Table of Contents", "");
+            string formatted = GlobalMethods.FormatAsCSharpString(summary_);
+            HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, appPath + htmlPathBookImage + ".jpg");
+
+            // Add text to html
+            HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
+                             summary_, "Arial", 16, false);
+
+            htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+            HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+            Console.WriteLine("Builded the files, uploading to blob.");
+            byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
+            string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
+            await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
+            Console.WriteLine("Done. Result " + result);
         }
         else if(args[0] != null && args[0].Contains("WriteSummaryToBlob"))
         {

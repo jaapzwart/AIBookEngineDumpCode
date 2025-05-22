@@ -79,7 +79,8 @@ using Aspose.Pdf.Plugins;
 using static Community.CsharpSqlite.Sqlite3;
 using Polly;
 using Polly.Retry;
-
+using Polly.Extensions.Http;
+using System.Net.Http;
 
 namespace Writeyourownbooktest
 {
@@ -4131,9 +4132,129 @@ namespace Writeyourownbooktest
             return resultGrok;
 
         }
-    
+        // Enhanced thriller chapter generator with refined narrative pacing and structure
+        public static class GoogleAiRequestThrottler
+        {
+            private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(5); // Max 5 concurrent requests
+            private static readonly TimeSpan Delay = TimeSpan.FromSeconds(12); // Delay to avoid hitting rate limits
 
-    public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
+            public static async Task<T> ExecuteWithThrottlingAsync<T>(Func<Task<T>> action)
+            {
+                await Semaphore.WaitAsync();
+                try
+                {
+                    var result = await action();
+                    await Task.Delay(Delay); // Wait after the request to reduce chances of 429
+                    return result;
+                }
+                finally
+                {
+                    Semaphore.Release();
+                }
+            }
+        }
+
+        public static async Task<string> GetGoogleLarge(string textToTranslate, string answerLanguage = "English")
+        {
+            string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+                string projectId = Secrets.GoogleProjectID;
+                string location = "us-central1";
+                string publisher = "google";
+                string modelId = "gemini-2.5-pro-preview-05-06";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
+                var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+                Console.WriteLine($"API Endpoint: {apiEndpoint}");
+                Console.WriteLine($"Credentials Path: {credentialsFilePath}");
+
+                var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+                var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+                var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+                Console.WriteLine("Access Token retrieved successfully");
+
+                string prompt = textToTranslate ?? "Tell me about stars.";
+                string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+               
+                var requestData = new
+                {
+                    contents = new[]
+                    {
+                new
+                {
+                    role = "user",
+                    parts = new[]
+                    {
+                        new { text = question }
+                    }
+                }
+            },
+                    generationConfig = new
+                    {
+                        temperature = 0.4,
+                        maxOutputTokens = 32768, // ✅ Max safe value — ~24,000+ words, use cautiously
+                        topP = 0.95,
+                        topK = 40
+                    }
+                };
+
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+
+                var retryPolicy = Policy
+                .HandleResult<HttpResponseMessage>(r => (int)r.StatusCode == 429)
+                .Or<HttpRequestException>()
+                .WaitAndRetryAsync(
+                    retryCount: 5,
+                    sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt) + 1),
+                    onRetry: (result, timespan, retryCount, context) =>
+                    {
+                        if (result.Exception != null)
+                            Console.WriteLine($"Retry {retryCount} after {timespan.TotalSeconds}s due to exception: {result.Exception.Message}");
+                        else
+                            Console.WriteLine($"Retry {retryCount} after {timespan.TotalSeconds}s due to status code: {result.Result.StatusCode}");
+                    }
+                );
+
+
+                using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    var response = await GoogleAiRequestThrottler.ExecuteWithThrottlingAsync<HttpResponseMessage>(
+                        () => retryPolicy.ExecuteAsync(() => client.PostAsync(apiEndpoint, content))
+                    );
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Status Code after retries: {response.StatusCode}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"API request failed with status {response.StatusCode}: {result}");
+                    }
+
+                    var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
+                    if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+                    {
+                        string answer = responseData.Candidates[0].Content.Parts[0].Text;
+                        Console.WriteLine($"Extracted Answer: {answer}");
+                        return answer;
+                    }
+                    else
+                    {
+                        throw new Exception("No valid response from the API: " + result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+        }
+
+
+        public static async Task<string> GetGoogleLargeOrg(string textToTranslate, string answerLanguage = "English")
     {
         string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
         try
