@@ -2557,6 +2557,360 @@ class Program
             await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
             Console.WriteLine("Done. Result " + result);
         }
+        else if (args[0] != null && args[0].Contains("aiconversation"))
+        {
+            // "aiconversation" "dochtml" "xxx" "true"
+
+            // Create the documents
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            string progressFileTxt = "progresscontroller.txt";
+            string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
+            string chapterTitlesPathHtmlSummary = "summary_talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
+
+            string outputFileProgressTxt = progressFileTxt;
+            string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
+            
+            // Create the variables
+            Queue<string> responseLines = new Queue<string>();
+            List<string> getChapters = new List<string>();
+            int maxCycles = 10;
+            string getResponseLiness = "";
+            string chatGptResponse = ""; 
+            string geminiResponse = "";
+            string grokResponse = "";
+            string _translatedTitle = "";
+            string outputFilePath = "AI_Conversation_Log.txt";
+            string inputFilePath = "StartInput.txt";
+            string currentInput = File.ReadAllText(inputFilePath, Encoding.UTF8).Trim();
+            string chapterContent = "Give only the chapter content without leading or finishing extra content text.";
+            string tTitle = "";
+
+            // Create the image and quote variables
+            string getQuote, sQuote, imagePath, Simage;
+            string sClean = "";
+            string iimage = "";
+            string makingImage = "";
+            bool success;
+
+            // prompt vars
+            string _examples = args[1];
+            string _AILanguage = args[2];
+            string _AIImages = args[3];
+
+            tTitle = await AddTitle(getChapters, currentInput, tTitle);
+            _translatedTitle = await TranslateTitle(tTitle, _AILanguage);
+            tTitle = _translatedTitle;
+
+            // Get the first image title for the book
+            if (_examples.Contains("dochtml"))
+            {
+                string FirstImageOfBook = tTitle;
+                iimage = FirstImageOfBook;
+            }
+
+            // Do we want images?
+            bool doImage = false;
+            if (_AIImages.Contains("true"))
+                doImage = true;
+
+            // Do your thing when images are wanted
+            if (doImage)
+            {
+                sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "");
+                imagePath = "";
+
+                if (_examples.Contains("dochtml"))
+                {
+                    string FirstImageOfBook = tTitle;
+                    makingImage = FirstImageOfBook + " ";
+                }
+
+                Simage = await GetDalleGood(makingImage + iimage);
+                if (Simage.Contains("Bad Request"))
+                {
+                    Simage = await GetDalleGood(makingImage + sClean);
+                }
+                await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+
+                success = false;
+                while (!success)
+                {
+                    try
+                    {
+                        await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                        success = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error reducing image:" + ex.Message);
+                        Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                        Simage = await GetDalleGood(makingImage + iimage);
+                        if (Simage.Contains("Bad Request"))
+                        {
+                            Simage = await GetDalleGood(makingImage + sClean);
+                        }
+                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                    }
+                }
+
+            }
+            HtmlGenerator.CreateHtmlDocument(outputFilePathHtml);
+            await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Starting");
+
+            // For the summary
+            string overallPlotline = "<html><body><br>" +
+                    "<h1>Summary of book</h1><hr>" +
+                    tTitle + "<hr>"; // Initial plotline, will evolve
+            string overallPlotLineSummary = "";
+
+
+            string sFore = " Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + currentInput + "'." +
+                            " Use this opening not merely as a starting point, but as a threshold—introducing the world, the protagonist, and the first sparks of tension that hint at larger forces at play." +
+                            " Allow the narrative to unfold with a dynamic structure, unconstrained by a strict chronological order—play with time through memories, visions, or foreshadowing to weave a layered introduction." +
+                            " This chapter should not resolve key plotlines, but rather ignite curiosity and lay the emotional and thematic groundwork for the journey ahead.";
+
+            // Clear the file at the start
+            File.WriteAllText(outputFilePath, string.Empty, Encoding.UTF8);
+
+            // Keep track of chapters
+            int chaptersDone = 0;
+            
+            for (int i = 0; i < maxCycles; i++)
+            {
+                await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:" + chaptersDone.ToString() + " of total:" + maxCycles.ToString());
+
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync($"\n--- Cycle {i + 1} ---");
+                }
+
+                // Step 1: Send to ChatGPT
+                chatGptResponse = await LargeGPT.CallLargeChatGPT(sFore + chapterContent, "o1");
+                Console.WriteLine("ChatGPT says:\n" + chatGptResponse);
+
+                // Update overallPlotline with a summary of key developments
+                string plotUpdate = await LargeGPT.CallLargeChatGPT(
+                    "Summarize the key plot developments in this chapter in 1 plain paragraph: '" + chatGptResponse + "'",
+                    "o3-mini");
+                overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
+
+                tTitle = await AddTitle(getChapters, chatGptResponse, tTitle);
+                _translatedTitle = await TranslateTitle(tTitle, _AILanguage);
+                tTitle = _translatedTitle;
+                iimage = _translatedTitle;
+
+                #region Do Image and Quote and add response to Html
+                // Do Image
+                sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+
+                if (doImage)
+                {
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    imagePath = "";
+                    if (_examples.Contains("dochtml"))
+                    {
+                        string TopImage = tTitle;
+                        makingImage = TopImage + " on the title - ";
+                    }
+                    Simage = "";
+                    success = false;
+                    while (!success)
+                    {
+                        try
+                        {
+                            iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                                Simage = await GetDalleGood(makingImage + sQuote);
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                            success = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                            iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                        }
+                    }
+
+                    success = false;
+                    while (!success)
+                    {
+                        try
+                        {
+                            await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                            success = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                            iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                                Simage = await GetDalleGood(makingImage + sClean);
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                        }
+                    }
+                }
+                // Append to HTML
+                if (_examples.Contains("dochtml"))
+                {
+                    HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>",
+                        "MAIN Quoted text added successfully.", false);
+                    HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
+                }
+
+                if (doImage)
+                {
+                    imagePath = appPath + sClean + ".jpg";
+                    HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath, false);
+                }
+                getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
+                sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                sQuote = await TranslateQuote(getQuote, sQuote, _AILanguage);
+
+                HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, true, true, "white", false, "black", "Garamond", 28, false);
+
+                Console.WriteLine("Before getResponse...");
+                // Generate and store chapter content
+                if (_examples.Contains("dochtml"))
+                {
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    Console.WriteLine("Before translating sQuote");
+                    sQuote = await TranslateQuote(getQuote, sQuote, _AILanguage);
+                    Console.WriteLine("After translating getQuote");
+
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 28, false);
+
+                    HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
+                            chatGptResponse, "Arial", 16);
+                    Console.WriteLine("After ADDING translated getResponse to the document.");
+                }
+                #endregion
+
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("CHATGPT");
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("ChatGPT says:");
+                    await writer.WriteLineAsync(tTitle);
+                    await writer.WriteLineAsync(chatGptResponse);
+                }
+                responseLines.Enqueue(chatGptResponse);
+                if (responseLines.Count > 8)
+                    responseLines.Dequeue(); // remove oldest
+
+                getResponseLiness = string.Join('\n', responseLines) + '\n';
+
+                sFore =
+                        " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
+                        " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
+                        " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
+                        " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
+                        " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+
+
+                // Step 2: Send ChatGPT response to Gemini
+                geminiResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, "xxx");
+                Console.WriteLine("Gemini says:\n" + geminiResponse);
+
+                // Update overallPlotline with a summary of key developments
+                plotUpdate = await LargeGPT.CallLargeChatGPT(
+                    "Summarize the key plot developments in this chapter in 1 plain paragraph: '" + geminiResponse + "'",
+                    "o3-mini");
+                overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
+
+                tTitle = await AddTitle(getChapters, geminiResponse, tTitle);
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("GEMINI");
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("Gemini says:");
+                    await writer.WriteLineAsync(tTitle);
+                    await writer.WriteLineAsync(geminiResponse);
+                }
+                responseLines.Enqueue(geminiResponse);
+                if (responseLines.Count > 8)
+                    responseLines.Dequeue(); // remove oldest
+
+                getResponseLiness = string.Join('\n', responseLines) + '\n';
+
+                sFore =
+                       " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
+                       " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
+                       " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
+                       " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
+                       " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+
+
+                // Step 2: Send ChatGPT response to Gemini
+                grokResponse = await LargeGPT.GetGrok(sFore + chapterContent, "grok-3-mini-beta");
+                Console.WriteLine("Gemini says:\n" + geminiResponse);
+
+                // Update overallPlotline with a summary of key developments
+                plotUpdate = await LargeGPT.CallLargeChatGPT(
+                    "Summarize the key plot developments in this chapter in 1 plain paragraph: '" + grokResponse + "'",
+                    "o3-mini");
+                overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
+
+                tTitle = await AddTitle(getChapters, grokResponse, tTitle);
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("GROK");
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("Grok says:");
+                    await writer.WriteLineAsync(tTitle);
+                    await writer.WriteLineAsync(grokResponse);
+                }
+                responseLines.Enqueue(grokResponse);
+                if (responseLines.Count > 8)
+                    responseLines.Dequeue(); // remove oldest
+
+                getResponseLiness = string.Join('\n', responseLines) + '\n';
+
+                sFore =
+                        " Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'." +
+                        " Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted." +
+                        " Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression." +
+                        " Allow for creative storytelling techniques such as flashbacks, time jumps, or parallel threads to enrich the structure and pacing." +
+                        " Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+
+                chaptersDone += 1;
+            }
+
+            // Final write after the loop
+            using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+            {
+                await writer.WriteLineAsync("\n--- End of Conversation ---");
+            }
+        }
         else if(args[0] != null && args[0].Contains("WriteSummaryToBlob"))
         {
             try
