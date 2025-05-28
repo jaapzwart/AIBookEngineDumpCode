@@ -81,6 +81,8 @@ using Polly;
 using Polly.Retry;
 using Polly.Extensions.Http;
 using System.Net.Http;
+using System.Speech.Synthesis;
+using DocumentFormat.OpenXml.Drawing.Charts;
 
 namespace Writeyourownbooktest
 {
@@ -4010,18 +4012,21 @@ namespace Writeyourownbooktest
         private static readonly string apiKey = Secrets._o1;
         private static readonly string apiUrl = "https://api.openai.com/v1/chat/completions"; // API endpoint
 
-        public static async Task<string> CallLargeChatGPT(string prompt, string modell)
+        public static async Task<string> CallLargeChatGPT(string prompt, string modell, string answerLanguage = "English")
         {
-            var response = await CallOpenAIAsync(prompt, modell);
+            var response = await CallOpenAIAsync(prompt, modell, answerLanguage);
             Console.WriteLine(response);
             return response;
         }
 
-        static async Task<string> CallOpenAIAsync(string prompt, string modell)
+        static async Task<string> CallOpenAIAsync(string prompt, string modell, string answerLanguage)
         {
             int maxRetries = 10;
             int retryCount = 0;
             TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
+
+            string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+            prompt = question;
 
             while (retryCount < maxRetries)
             {
@@ -4082,56 +4087,50 @@ namespace Writeyourownbooktest
 
             throw new Exception("Unexpected error: Maximum retries exceeded.");
         }
-        public static async Task<string> GetGrok(string question, string modell)
+        public static async Task<string> GetGrok(string question, string modell, string answerLanguage = "English")
         {
             string resultGrok = "";
-            // Your API key and base URL 
             string apiKey = Secrets.GrokKey;
             string baseURL = Secrets.GrokCompletionAddress;
 
-            // Create the HTTP client 
-            using (HttpClient client = new HttpClient())
+            question = $"Return only the text of the chapter, no front headers, titles, words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {question}";
+
+            // Set custom timeout
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
             {
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-                string gRok = "";
-                // Define the request body 
+
                 var requestBody = new
                 {
                     model = modell,
                     messages = new[]
                     {
-                    new { role = "system", content = Secrets.GrokRole },
-                    new { role = "user", content = question }
+                        new { role = "system", content = Secrets.GrokRole },
+                        new { role = "user", content = question }
                     },
-                    max_tokens = 40000  // Set to the maximum allowed tokens for grok-beta
+                    max_tokens = 80000
                 };
 
-                // Serialize the request body to JSON 
                 string json = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // Make the POST request 
                 HttpResponseMessage response = await client.PostAsync(baseURL, content);
 
-                // Read and output the response 
                 if (response.IsSuccessStatusCode)
                 {
                     string responseBody = await response.Content.ReadAsStringAsync();
                     dynamic result = JsonConvert.DeserializeObject(responseBody);
                     resultGrok = result.choices[0].message.content;
-                    gRok = resultGrok;
-
                 }
                 else
                 {
                     resultGrok = response.StatusCode.ToString();
-                    gRok = resultGrok;
-
                 }
             }
-            return resultGrok;
 
+            return resultGrok;
         }
+
         // Enhanced thriller chapter generator with refined narrative pacing and structure
         public static class GoogleAiRequestThrottler
         {
@@ -4193,7 +4192,7 @@ namespace Writeyourownbooktest
                     generationConfig = new
                     {
                         temperature = 0.4,
-                        maxOutputTokens = 32768, // ✅ Max safe value — ~24,000+ words, use cautiously
+                        maxOutputTokens = 14000, // ✅ Max safe value — ~24,000+ words, use cautiously
                         topP = 0.95,
                         topK = 40
                     }
@@ -4297,7 +4296,7 @@ namespace Writeyourownbooktest
                 generationConfig = new
                 {
                     temperature = 0.4,
-                    maxOutputTokens = 64000,
+                    maxOutputTokens = 14000,
                     topP = 0.95,
                     topK = 40
                 }
@@ -4673,7 +4672,131 @@ namespace Writeyourownbooktest
                 Console.WriteLine("Closing HTML tags already exist. No changes made.");
             }
         }
+        public static string CreateHtmlDocumentConversation(string filename,
+            string titelOfBook, string MainHeaderTitle, string _firstPageInit,
+            string _imagePath)
+        {
+            if (File.Exists(filename))
+            {
+                Console.WriteLine("HTML file already exists. Skipping creation.");
+                return filename;
+            }
+            string bookTitle = titelOfBook;
+            string headerTitle = MainHeaderTitle;
+            string firstPageInit = _firstPageInit;
+            string imagePath = _imagePath;
+            
+            string emptyHtmlContent = $@"
+            <!DOCTYPE html>
+            <html lang=""en"">
+            <head>
+                <meta charset=""UTF-8"">
+                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                <title>{bookTitle}</title>
+                <style>
+                    p {{
+                        width: 95% !important;
+                        margin: auto !important;
+                        margin-bottom: 1em !important; /* 2 lines of space */
+                        padding: 2px !important;
+                        font-size: 14pt !important;
+                        line-height: 1.5 !important;
+                        text-align: justify !important;
+                    }}
 
+                    table, ul, li {{
+                        font-family: 'Arial', sans-serif;
+                        font-size: 14px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    ul {{
+                        font-size: 12px;
+                    }}
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        font-size: 16px;
+                        color: #000;
+                        background-color: #fff;
+                        line-height: 1.6;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .text-container {{
+                        width: 95%;
+                        margin: auto;
+                        margin-bottom: 40mm;
+                        padding: 2px;
+                        font-family: Arial, sans-serif;
+                        font-size: 12pt;
+                        line-height: 1.5;
+                        text-align: justify;
+                    }}
+                    .a4-page {{
+                        width: 210mm;
+                        height: 297mm;
+                        max-width: 210mm;
+                        aspect-ratio: 210 / 297;
+                        margin: auto;
+                        padding: 5mm 5mm 20mm 5mm;
+                        background: white;
+                        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                    }}
+                    @media print {{
+                        body {{
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .a4-page {{
+                            width: 210mm;
+                            height: 297mm;
+                            max-width: 210mm;
+                            aspect-ratio: 210 / 297;
+                            margin: auto;
+                            padding: 5mm 5mm 20mm 5mm;
+                            box-shadow: none;
+                        }}
+                    }}
+                    .image-container {{
+                        text-align: center;
+                        margin: 10px auto;
+                        border: 1px solid black;
+                        display: inline-block;
+                        padding: 6px;
+                    }}
+                    .image-container img {{
+                        max-width: 100%;
+                        height: auto;
+                    }}
+                </style>
+            </head>
+            <body>
+            <center>
+                <h1>{headerTitle}</h1> 
+                <h2>{bookTitle}</h2>
+                <div class=""image-container"">
+                    <img src=""{imagePath}"" alt=""Inserted Image"">
+                </div>
+            </center>
+            <div style='page-break-after: always;'></div>
+            <br /><br /><br /><br />
+            <div style=""text-align: center;  background-color: white; padding: 10px; margin: 20px auto; width: 80%;"">
+            {firstPageInit}
+            </div>
+            <div style='page-break-after: always;'></div>
+            <div class='text-container'>
+       
+            </div>
+            </body>
+            </html>";
+
+            File.AppendAllText(filename, emptyHtmlContent, Encoding.UTF8);
+            Console.WriteLine("HTML document created successfully at: " + filename);
+            return filename;
+        }
         public static string CreateHtmlDocument(string filename)
         {
             if (File.Exists(filename))
@@ -5153,6 +5276,36 @@ namespace Writeyourownbooktest
                 if (lines.Length > 4) BookSteeringWheelUniverse = lines[4].Trim();
 
                 _plotDataLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error loading plot config from blob: " + ex.Message);
+            }
+        }
+        public static string DPrompt { get; private set; } = "";
+        public static string DTitle { get; private set; } = "";
+        public static string DCycles { get; private set; } = "";
+        public static string DWords { get; private set; } = "";
+
+        private static bool _singletDataLoaded = false;
+        public static async Task LoadPlotDataSinglePromptVars(string fileName = "DSingleprompt.txt")
+        {
+            if (_singletDataLoaded) return;
+
+            try
+            {
+                string[] lines = await GlobalBlobber.ReadLinesFromBlobAsync(
+                    Secrets.cloudStorageConnString,
+                    "mindscriptedconfig",
+                    fileName
+                );
+
+                if (lines.Length > 0) DPrompt = lines[0].Trim();
+                if (lines.Length > 1) DTitle = lines[1].Trim();
+                if (lines.Length > 2) DCycles = lines[2].Trim();
+                if (lines.Length > 3) DWords = lines[3].Trim();
+
+                _singletDataLoaded = true;
             }
             catch (Exception ex)
             {
