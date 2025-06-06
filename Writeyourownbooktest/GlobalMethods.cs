@@ -83,6 +83,7 @@ using Polly.Extensions.Http;
 using System.Net.Http;
 using System.Speech.Synthesis;
 using DocumentFormat.OpenXml.Drawing.Charts;
+using System.Net.Http.Headers;
 
 namespace Writeyourownbooktest
 {
@@ -4174,7 +4175,8 @@ namespace Writeyourownbooktest
                 Console.WriteLine("Access Token retrieved successfully");
 
                 string prompt = textToTranslate ?? "Tell me about stars.";
-                string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+                string question = $"Return only the text content of the chapter, no front words or paragraphs and no after words or paragraphs" +
+                    $" and make sure the chapter ends properly with a completed sentence and a dot, no unfinished end with a comma. Please answer the following in {answerLanguage}: {prompt}";
                
                 var requestData = new
                 {
@@ -4251,10 +4253,116 @@ namespace Writeyourownbooktest
                 return $"Error: {ex.Message}";
             }
         }
+        public static async Task<string> GetDeepSeekOld(string textToTranslate, string answerLanguage = "English")
+        {
+            string apiKey = Secrets._deepseekKey;
+            string apiUrl = "https://api.deepseek.com/v1/chat/completions";
 
+            var requestData = new
+            {
+                model = Secrets._deepseekModel, // e.g., "deepseek-chat"
+                messages = new[]
+                {
+                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "user", content = "Tell me about quantum physics." }
+                },
+                temperature = 0.7,
+                max_tokens = 1000
+            };
+
+            string json = JsonConvert.SerializeObject(requestData);
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync(apiUrl, content);
+
+                string responseBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("Response:");
+                Console.WriteLine(responseBody);
+                return responseBody;
+            }
+        }
+        public static async Task<string> GetDeepSeek(string textToTranslate, string answerLanguage = "English")
+        {
+            string apiKey = Secrets._deepseekKey;
+            string apiUrl = "https://api.deepseek.com/v1/chat/completions";
+
+            var requestData = new
+            {
+                model = Secrets._deepseekModel, // e.g., "deepseek-chat"
+                messages = new[]
+                {
+            new { role = "system", content = "You are a skillful thriller writer that answers in " + answerLanguage + "." },
+            new { role = "user", content = textToTranslate }
+        },
+                temperature = 0.7,
+                max_tokens = 2000 
+            };
+
+            string json = JsonConvert.SerializeObject(requestData);
+
+            using (var client = new HttpClient())
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                const int maxRetries = 3;
+                int delayMilliseconds = 2000;
+
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    try
+                    {
+                        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+                        {
+                            var response = await client.PostAsync(apiUrl, content);
+                            var responseBody = await response.Content.ReadAsStringAsync();
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                // Extract response content intelligently
+                                dynamic result = JsonConvert.DeserializeObject(responseBody);
+                                string reply = result?.choices?[0]?.message?.content;
+
+                                return string.IsNullOrWhiteSpace(reply)
+                                    ? "No content returned from DeepSeek."
+                                    : reply.Trim();
+                            }
+                            else if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
+                            {
+                                // Retry on rate limit or server error
+                                await Task.Delay(delayMilliseconds);
+                                delayMilliseconds *= 2;
+                            }
+                            else
+                            {
+                                return $"Error: {response.StatusCode}, {responseBody}";
+                            }
+                        }
+                    }
+                    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                    {
+                        Console.WriteLine($"Timeout on attempt {attempt}. Retrying...");
+                        await Task.Delay(delayMilliseconds);
+                        delayMilliseconds *= 2;
+                    }
+                    catch (Exception ex)
+                    {
+                        return $"Unhandled exception: {ex.Message}";
+                    }
+                }
+
+                return "Failed to get a response from DeepSeek after multiple retries.";
+            }
+        }
 
         public static async Task<string> GetGoogleLargeOrg(string textToTranslate, string answerLanguage = "English")
-    {
+        {
         string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
         try
         {
@@ -5285,7 +5393,9 @@ namespace Writeyourownbooktest
         public static string DPrompt { get; private set; } = "";
         public static string DTitle { get; private set; } = "";
         public static string DCycles { get; private set; } = "";
-        public static string DWords { get; private set; } = "";
+        public static string DWords { get; private set; } = ""; 
+        public static string DTypeOfImage { get; private set; } = "";
+        public static string DTypeOfBook { get; private set; } = "";
 
         private static bool _singletDataLoaded = false;
         public static async Task LoadPlotDataSinglePromptVars(string fileName = "DSingleprompt.txt")
@@ -5304,6 +5414,8 @@ namespace Writeyourownbooktest
                 if (lines.Length > 1) DTitle = lines[1].Trim();
                 if (lines.Length > 2) DCycles = lines[2].Trim();
                 if (lines.Length > 3) DWords = lines[3].Trim();
+                if (lines.Length > 3) DTypeOfImage = lines[4].Trim();
+                if (lines.Length > 3) DTypeOfBook = lines[5].Trim();
 
                 _singletDataLoaded = true;
             }

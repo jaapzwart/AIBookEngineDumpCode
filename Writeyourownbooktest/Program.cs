@@ -2582,13 +2582,13 @@ class Program
             string outputFilePathHtml = appPath + chapterTitlesPathHtml;
             string outputFilePathPdf = appPath + chapterTitlesPathPdf;
             string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
-            
+
             // Create the variables
             Queue<string> responseLines = new Queue<string>();
             List<string> getChapters = new List<string>();
             int maxCycles = 10;
             string getResponseLiness = "";
-            string chatGptResponse = ""; 
+            string chatGptResponse = "";
             string geminiResponse = "";
             string grokResponse = "";
             string _translatedTitle = "";
@@ -2610,7 +2610,7 @@ class Program
             string _examples = args[1];
             string _AILanguage = args[2];
             string _AIImages = args[3];
-            string _typeOfBook = args[4];
+            string _AIModel = args[4];
 
             string _translationText = "";
             if (_AILanguage.Contains("xxx"))
@@ -2639,7 +2639,7 @@ class Program
             string mTitle = await AddTitle(getChapters, "Create a main title from " + tTitle, tTitle);
             _translatedTitle = await TranslateTitle(mTitle, _AILanguage);
             mTitle = _translatedTitle;
-            
+
 
             #region Do starting image to Html
             // Do Image
@@ -2653,7 +2653,7 @@ class Program
                 imagePath = "";
                 if (_examples.Contains("dochtml"))
                 {
-                    string TopImage = "Create an abstract intense image ";
+                    string TopImage = GetPromptVars.DTypeOfImage;
                     makingImage = TopImage + " on the title - ";
                 }
                 Simage = "";
@@ -2712,7 +2712,7 @@ class Program
             {
                 imagePath = appPath + sClean + ".jpg";
                 HtmlGenerator.CreateHtmlDocumentConversation(outputFilePathHtml,
-                tTitle, mTitle, _typeOfBook, imagePath);
+                tTitle, mTitle, GetPromptVars.DTypeOfBook, imagePath);
                 GetPromptVars.MainHtmlImageTop = imagePath;
             }
             GetPromptVars.NameOfBook = mTitle.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
@@ -2729,26 +2729,17 @@ class Program
                     tTitle + "<hr>"; // Initial plotline, will evolve
             string overallPlotLineSummary = "";
 
-
-            string sFore =
-                 "Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + currentInput + "'. " +
-                 "Craft vivid and atmospheric scene descriptions that bring the world to life—use sensory details, symbolic elements, and mood to anchor the reader in time and place. " +
-                 "Introduce not only the protagonist but also a diverse cast of supporting characters—each with their own distinctive voice, backstory, worldview, and motivations. " +
-                 "Ensure that character interactions are meaningful and complex, using intelligent, layered dialogues to reveal relationships, hidden tensions, unspoken desires, and emerging alliances or rivalries. " +
-                 "Let characters challenge, provoke, and surprise one another—use conflict, wit, empathy, and philosophical undertones to make conversations feel real and compelling. " +
-                 "Allow the narrative to unfold with a dynamic structure—incorporate memories, visions, or glimpses of possible futures to enrich the temporal texture and build intrigue. " +
-                 "Weave in subtle yet intelligent plot developments and foreshadowing—seeding future twists without making them obvious. " +
-                 "This chapter should ignite curiosity, evoke emotional investment, and lay the philosophical, emotional, and thematic foundations for the journey ahead without resolving the deeper tensions.";
-
-            sFore = "Write a complete and immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+            string sFore = SetContentBook(currentInput);
 
             // Clear the file at the start
             File.WriteAllText(outputFilePath, string.Empty, Encoding.UTF8);
 
             // Keep track of chapters
             int chaptersDone = 0;
+            string aiModel = _AIModel;
 
             maxCycles = Convert.ToInt32(GetPromptVars.DCycles);
+            int memCycles = 31;
             for (int i = 0; i < maxCycles; i++)
             {
                 string chapterStage;
@@ -2772,7 +2763,20 @@ class Program
 
                 // Step 1: Send to ChatGPT
                 //chatGptResponse = await LargeGPT.CallLargeChatGPT(sFore + chapterContent, "o3-mini", _translationText);
-                chatGptResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+
+                do
+                {
+                    if(aiModel.Contains("Google"))
+                        chatGptResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+                    if (aiModel.Contains("deepseek"))
+                        chatGptResponse = await LargeGPT.GetDeepSeek(sFore + chapterContent, _translationText);
+                }
+                while (chatGptResponse.Contains("No valid response from the API")
+                        || chatGptResponse.Contains("Exception:")
+                        || chatGptResponse.Contains("Error:")
+                        || !chatGptResponse.EndsWith("."));
+
+
 
                 Console.WriteLine("ChatGPT says:\n" + chatGptResponse);
 
@@ -2799,7 +2803,7 @@ class Program
                     imagePath = "";
                     if (_examples.Contains("dochtml"))
                     {
-                        string TopImage = "Create an abstract intense image WITHOUT TEXT ";
+                        string TopImage = GetPromptVars.DTypeOfImage;
                         makingImage = TopImage + " on the title - ";
                     }
                     Simage = "";
@@ -2826,7 +2830,8 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
-                                Simage = await GetDalleGood(makingImage + iimage);
+                                Simage = await GetDalleGood(makingImage + sQuote);
+                                
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -2848,7 +2853,7 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 iimage = HtmlGenerator.EnsureJpgExtension(sClean);
-                                Simage = await GetDalleGood(makingImage + sClean);
+                                Simage = await GetDalleGood(makingImage + iimage);
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -2903,26 +2908,25 @@ class Program
                     await writer.WriteLineAsync(chatGptResponse);
                 }
                 responseLines.Enqueue(chatGptResponse);
-                if (responseLines.Count > 8)
+                if (responseLines.Count > memCycles)
                     responseLines.Dequeue(); // remove oldest
 
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
-
-
-                sFore =
-                    "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTERS, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                    "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
-                    "Introduce several new characters at meaningful junctures—each adding depth, tension, or contrast to the evolving dynamics. Give them clear voices, moral stances, and distinct roles that naturally integrate into the overarching storyline. " +
-                    "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and new emotional and philosophical stakes. " +
-                    "Let dialogue drive forward both relationships and revelations—use intelligent exchanges, subtle cues, and thematic undertones to uncover hidden motives, challenge assumptions, and spark ideological or personal conflict. " +
-                    "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot. " +
-                    "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
-                    "This chapter should enrich the thematic arc, maintain momentum, and challenge the reader intellectually and emotionally as the story progresses toward a powerful and thought-provoking conclusion.";
-
-                sFore = "Write a complete and immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 1, "", currentInput);
 
                 // Step 2: Send ChatGPT response to Gemini
-                geminiResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+                do
+                {
+                    if (aiModel.Contains("Google"))
+                        geminiResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+                    if (aiModel.Contains("deepseek"))
+                        geminiResponse = await LargeGPT.GetDeepSeek(sFore + chapterContent, _translationText);
+                }
+                while (geminiResponse.Contains("No valid response from the API")
+                        || geminiResponse.Contains("Exception:")
+                        || geminiResponse.Contains("Error:")
+                        || !geminiResponse.EndsWith("."));
+
                 Console.WriteLine("Gemini says:\n" + geminiResponse);
 
                 // Update overallPlotline with a summary of key developments
@@ -2948,10 +2952,10 @@ class Program
                     imagePath = "";
                     if (_examples.Contains("dochtml"))
                     {
-                        string TopImage = "Create an abstract intense image WITHOUT TEXT ";
+                        string TopImage = GetPromptVars.DTypeOfImage;
                         makingImage = TopImage + " on the title - ";
                     }
-                    
+
                     Simage = "";
                     success = false;
                     while (!success)
@@ -2976,7 +2980,7 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
-                                Simage = await GetDalleGood(makingImage + iimage);
+                                Simage = await GetDalleGood(makingImage + sQuote);
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -2998,7 +3002,7 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 iimage = HtmlGenerator.EnsureJpgExtension(sClean);
-                                Simage = await GetDalleGood(makingImage + sClean);
+                                Simage = await GetDalleGood(makingImage + iimage);
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -3053,28 +3057,28 @@ class Program
                     await writer.WriteLineAsync(geminiResponse);
                 }
                 responseLines.Enqueue(geminiResponse);
-                if (responseLines.Count > 8)
+                if (responseLines.Count > memCycles)
                     responseLines.Dequeue(); // remove oldest
 
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
 
-                sFore =
-                   $"This is a {chapterStage} chapter. " +
-                   "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                   "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
-                   "Introduce several new characters relevant to this stage of the narrative—each with distinct goals, perspectives, and personalities that challenge, support, or complicate the protagonist’s journey. " +
-                   "Weave these new figures seamlessly into the plot, using their presence to raise new questions, reshape group dynamics, or add philosophical and emotional tension. " +
-                   "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and heightened emotional or ideological stakes. " +
-                   "Let intelligent and dynamic dialogue unveil secrets, spark conflict, or reveal unexpected alliances—every conversation should carry weight, subtext, and narrative function. " +
-                   "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot. " +
-                   "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
-                   "This chapter should reflect the function of the current chapter stage, enrich the thematic arc, and propel the story forward with emotional resonance, narrative surprise, and intellectual depth.";
-                
-                sFore = "Write a complete and immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 2, chapterStage, currentInput);
+
 
                 // Step 2: Send ChatGPT response to Gemini
                 //grokResponse = await LargeGPT.GetGrok(sFore + chapterContent, "grok-3", _translationText);
-                grokResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+
+                do
+                {
+                    if (aiModel.Contains("Google"))
+                        grokResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent, _translationText);
+                    if (aiModel.Contains("deepseek"))
+                        grokResponse = await LargeGPT.GetDeepSeek(sFore + chapterContent, _translationText);
+                }
+                while (grokResponse.Contains("No valid response from the API")
+                        || grokResponse.Contains("Exception:")
+                        || grokResponse.Contains("Error:")
+                        || !grokResponse.EndsWith("."));
 
                 Console.WriteLine("Gemini says:\n" + geminiResponse);
 
@@ -3101,7 +3105,7 @@ class Program
                     imagePath = "";
                     if (_examples.Contains("dochtml"))
                     {
-                        string TopImage = "Create an abstract intense image WITHOUT TEXT ";
+                        string TopImage = GetPromptVars.DTypeOfImage;
                         makingImage = TopImage + " on the title - ";
                     }
                     Simage = "";
@@ -3128,7 +3132,7 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
-                                Simage = await GetDalleGood(makingImage + iimage);
+                                Simage = await GetDalleGood(makingImage + sQuote);
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -3150,7 +3154,7 @@ class Program
                             if (Simage.Contains("Bad Request"))
                             {
                                 iimage = HtmlGenerator.EnsureJpgExtension(sClean);
-                                Simage = await GetDalleGood(makingImage + sClean);
+                                Simage = await GetDalleGood(makingImage + iimage);
                             }
                             await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                         }
@@ -3205,21 +3209,12 @@ class Program
                     await writer.WriteLineAsync(grokResponse);
                 }
                 responseLines.Enqueue(grokResponse);
-                if (responseLines.Count > 8)
+                if (responseLines.Count > memCycles)
                     responseLines.Dequeue(); // remove oldest
 
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
 
-                sFore =
-                    "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                    "Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted. " +
-                    "Introduce new characters who naturally emerge at this stage—give them clear roles, distinct voices, and meaningful interactions that add complexity, challenge assumptions, or expand the emotional and thematic range of the story. " +
-                    "Use rich, psychologically layered dialogue to deepen relationships, ignite tensions, or reveal inner conflicts—ensure each exchange serves a purpose beyond surface-level interaction. " +
-                    "Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression. " +
-                    "Allow for creative storytelling techniques such as flashbacks, time jumps, parallel threads, or shifting perspectives to enrich the structure and pacing. " +
-                    "Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
-
-                sFore = "Write a complete and immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 3, "", currentInput);
 
                 chaptersDone += 1;
             }
@@ -5059,6 +5054,93 @@ class Program
         }
     }
 
+    private static string SetContentBookRunning(Queue<string> responseLines, string getResponseLiness, int cRun
+        , string _chapterStage, string _currentInput)
+    {
+        string sFore = "";
+        if (cRun == 1)
+        {
+            sFore = "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTERS, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
+                    "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
+                    "Introduce several new characters at meaningful junctures—each adding depth, tension, or contrast to the evolving dynamics. Give them clear voices, moral stances, and distinct roles that naturally integrate into the overarching storyline. " +
+                    "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and new emotional and philosophical stakes. " +
+                    "Let dialogue drive forward both relationships and revelations—use intelligent exchanges, subtle cues, and thematic undertones to uncover hidden motives, challenge assumptions, and spark ideological or personal conflict. " +
+                    "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot: " + _currentInput + "." +
+                    "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
+                    "This chapter should enrich the thematic arc, maintain momentum, and challenge the reader intellectually and emotionally as the story progresses.";
+        }   
+        if (cRun == 2)
+        {
+            sFore =
+                   $"This is a {_chapterStage} chapter. " +
+                   "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
+                   "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
+                   "Introduce several new characters relevant to this stage of the narrative—each with distinct goals, perspectives, and personalities that challenge, support, or complicate the protagonist’s journey. " +
+                   "Weave these new figures seamlessly into the plot, using their presence to raise new questions, reshape group dynamics, or add philosophical and emotional tension. " +
+                   "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and heightened emotional or ideological stakes. " +
+                   "Let intelligent and dynamic dialogue unveil secrets, spark conflict, or reveal unexpected alliances—every conversation should carry weight, subtext, and narrative function. " +
+                   "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot: " + _currentInput + "." +
+                   "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
+                   "This chapter should reflect the function of the current chapter stage, enrich the thematic arc, and propel the story forward with emotional resonance, narrative surprise, and intellectual depth.'";
+        }
+        if (cRun == 3)
+        {
+            sFore =
+                     "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
+                     "Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted. " +
+                     "Introduce new characters who naturally emerge at this stage—give them clear roles, distinct voices, and meaningful interactions that add complexity, challenge assumptions, or expand the emotional and thematic range of the story. " +
+                     "Use rich, psychologically layered dialogue to deepen relationships, ignite tensions, or reveal inner conflicts—ensure each exchange serves a purpose beyond surface-level interaction. " +
+                     "Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression towards and around the plot: " + _currentInput + "." +
+                     "Allow for creative storytelling techniques such as flashbacks, time jumps, parallel threads, or shifting perspectives to enrich the structure and pacing. " +
+                     "Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
+
+        }
+
+        StringBuilder result = new StringBuilder();
+
+        foreach (var text in responseLines)
+        {
+            // Split on double newlines or single newlines
+            var paragraphs = text.Split(new[] { "\n\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var lastParagraph = paragraphs[^1].Trim(); // ^1 means the last element
+
+            result.AppendLine(lastParagraph);
+            result.AppendLine(); // First blank line
+            result.AppendLine(); // Second blank line
+        }
+
+        string finalOutput = result.ToString().TrimEnd(); // Remove final trailing newlines
+
+        sFore = sFore + " Make the ending paragraph of this new chapter fully based on the content of current chapter," +
+            " but different from the previous chapter endings in " +
+                    finalOutput + ", " +
+                    "so that " +
+                    " the style does not seem similar with previous ending paragraphs " +
+                    "of the previous chapters to make the story more alive and vivid." +
+                    "Do an extra check if all the grammar and lines are logically and " +
+                    "correct conform the given output language asked for.";
+        
+        sFore = "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+        
+        return sFore;
+    }
+
+    private static string SetContentBook(string currentInput)
+    {
+        string sFore =
+             "Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + currentInput + "'. " +
+             "Craft vivid and atmospheric scene descriptions that bring the world to life—use sensory details, symbolic elements, and mood to anchor the reader in time and place. " +
+             "Introduce not only the protagonist but also a diverse cast of supporting characters—each with their own distinctive voice, backstory, worldview, and motivations. " +
+             "Ensure that character interactions are meaningful and complex, using intelligent, layered dialogues to reveal relationships, hidden tensions, unspoken desires, and emerging alliances or rivalries. " +
+             "Let characters challenge, provoke, and surprise one another—use conflict, wit, empathy, and philosophical undertones to make conversations feel real and compelling. " +
+             "Allow the narrative to unfold with a dynamic structure—incorporate memories, visions, or glimpses of possible futures to enrich the temporal texture and build intrigue. " +
+             "Weave in subtle yet intelligent plot developments and foreshadowing—seeding future twists without making them obvious. " +
+             "This chapter should ignite curiosity, evoke emotional investment, and lay the philosophical, emotional, and thematic foundations for the journey ahead without resolving the deeper tensions.";
+
+        sFore = "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+        return sFore;
+    }
+
     private static async Task<string> TranslateQuote(string getQuote, string sQuote, string _AILanguage)
     {
         string _translatedQuote = "";
@@ -5423,6 +5505,7 @@ class Program
                 break;
         }
     }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// <summary>   Startrek result. </summary>

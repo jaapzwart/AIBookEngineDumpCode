@@ -2,7 +2,7 @@
   "profiles": {
     "Writeyourownbooktest": {
       "commandName": "Project",
-      "commandLineArgs": "\"aiconversation\" \"dochtml\" \"nl\" \"true\" \"A SciFi Thriller\""
+      "commandLineArgs": "\"aiconversation\" \"dochtml\" \"nl\" \"true\" \"Google\""
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"
