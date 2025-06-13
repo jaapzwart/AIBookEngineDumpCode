@@ -2561,6 +2561,75 @@ class Program
             await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
             Console.WriteLine("Done. Result " + result);
         }
+        else if (args[0] != null && args[0].Contains("CreateGoogleImage"))
+        {
+            string projectId = Secrets.GoogleProjectID;
+            string region = "us-central1";
+            string endpoint = $"https://{region}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{region}/publishers/google/models/imagen-3.0-generate-002:predict";
+
+            var requestBody = new
+            {
+                instances = new[]
+                {
+            new
+            {
+                prompt = new { text = "Create an image of a football" },
+                parameters = new { aspectRatio = "1:1" }  // or 3:4, 4:3, 9:16, 16:9
+            }
+        }
+            };
+
+            using var client = new HttpClient();
+            //string accT = await GetAccessTokenAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await GetAccessTokenAsync());
+
+            var content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync(endpoint, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Image generation successful:");
+                Console.WriteLine(responseContent);
+                //return responseContent;
+            }
+            else
+            {
+                Console.WriteLine("Image generation failed:");
+                Console.WriteLine(responseContent);
+                //return $"Error: {response.StatusCode} - {responseContent}";
+            }
+
+            //"aiconversation" "dochtml" "nl" "true" "Google"
+            //string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+            //var generator1 = new GoogleImageGenerator
+            //{
+            //    ProjectId = Secrets.GoogleProjectID,
+            //    ServiceAccountJson = directoryPath + Secrets.GoogleCredentialFile,
+            //    OutputDirectory = "./MyGeneratedImages",
+            //    GenerationOptions = new()
+            //    {
+            //        Width = 512,
+            //        Height = 512,
+            //        NegativePrompt = "blurry, bad quality"
+            //    }
+            //};
+            //try
+            //{
+            //    string prompt = "A futuristic cityscape at sunset with flying cars";
+            //    string imagePath = await generator1.GenerateImage(prompt);
+            //    Console.WriteLine($"Image saved to: {imagePath}");
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"Error: {ex.Message}");
+            //}
+            //finally
+            //{
+            //    generator1.Dispose();
+            //}
+        }
+    
         else if (args[0] != null && args[0].Contains("aiconversation"))
         {
             // "aiconversation" "dochtml" "xxx" "true" "2" "A SciFi Thriller"
@@ -2645,76 +2714,73 @@ class Program
             // Do Image
             sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
 
-            if (doImage)
-            {
-                getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
-                sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+            
+            getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+            sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
 
-                imagePath = "";
-                if (_examples.Contains("dochtml"))
+            imagePath = "";
+            if (_examples.Contains("dochtml"))
+            {
+                string TopImage = GetPromptVars.DTypeOfImage;
+                makingImage = TopImage + " on the title - ";
+            }
+            Simage = "";
+            success = false;
+            while (!success)
+            {
+                try
                 {
-                    string TopImage = GetPromptVars.DTypeOfImage;
-                    makingImage = TopImage + " on the title - ";
+                    iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
+                    {
+                        sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                        Simage = await GetDalleGood(makingImage + sQuote);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                    success = true;
                 }
-                Simage = "";
-                success = false;
-                while (!success)
+                catch (Exception ex)
                 {
-                    try
+                    Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                    iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
+                    {
+                        sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                        Simage = await GetDalleGood(makingImage + iimage);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                }
+            }
+            success = false;
+            while (!success)
+            {
+                try
+                {
+                    await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                    iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
                     {
                         iimage = HtmlGenerator.EnsureJpgExtension(sClean);
                         Simage = await GetDalleGood(makingImage + iimage);
-                        if (Simage.Contains("Bad Request"))
-                        {
-                            sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
-                            Simage = await GetDalleGood(makingImage + sQuote);
-                        }
-                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
-                        success = true;
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
-                        iimage = HtmlGenerator.EnsureJpgExtension(iimage);
-                        Simage = await GetDalleGood(makingImage + iimage);
-                        if (Simage.Contains("Bad Request"))
-                        {
-                            sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
-                            Simage = await GetDalleGood(makingImage + iimage);
-                        }
-                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
-                    }
-                }
-
-                success = false;
-                while (!success)
-                {
-                    try
-                    {
-                        await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
-                        success = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
-                        iimage = HtmlGenerator.EnsureJpgExtension(iimage);
-                        Simage = await GetDalleGood(makingImage + iimage);
-                        if (Simage.Contains("Bad Request"))
-                        {
-                            iimage = HtmlGenerator.EnsureJpgExtension(sClean);
-                            Simage = await GetDalleGood(makingImage + sClean);
-                        }
-                        await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
-                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
                 }
             }
-            if (doImage)
-            {
-                imagePath = appPath + sClean + ".jpg";
-                HtmlGenerator.CreateHtmlDocumentConversation(outputFilePathHtml,
-                tTitle, mTitle, GetPromptVars.DTypeOfBook, imagePath);
-                GetPromptVars.MainHtmlImageTop = imagePath;
-            }
+            
+           
+            imagePath = appPath + sClean + ".jpg";
+            HtmlGenerator.CreateHtmlDocumentConversation(outputFilePathHtml,
+            tTitle, mTitle, GetPromptVars.DTypeOfBook, imagePath);
+            GetPromptVars.MainHtmlImageTop = imagePath;
+            
             GetPromptVars.NameOfBook = mTitle.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
             //GetPromptVars.NameOfBook = "SciFi Short - NL - GIAI Part 1 - " + GetPromptVars.NameOfBook;
             GetPromptVars.NameOfBook = GetPromptVars.DTitle;
@@ -2729,7 +2795,10 @@ class Program
                     tTitle + "<hr>"; // Initial plotline, will evolve
             string overallPlotLineSummary = "";
 
-            string sFore = SetContentBook(currentInput);
+            string sFore = SetContentBook(currentInput, GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
+           
+            //string sFore = SetContentBookRunning(responseLines, getResponseLiness, 0, "", currentInput,
+            //        GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
 
             // Clear the file at the start
             File.WriteAllText(outputFilePath, string.Empty, Encoding.UTF8);
@@ -2775,7 +2844,6 @@ class Program
                         || chatGptResponse.Contains("Exception:")
                         || chatGptResponse.Contains("Error:")
                         || !chatGptResponse.EndsWith("."));
-
 
 
                 Console.WriteLine("ChatGPT says:\n" + chatGptResponse);
@@ -2908,11 +2976,10 @@ class Program
                     await writer.WriteLineAsync(chatGptResponse);
                 }
                 responseLines.Enqueue(chatGptResponse);
-                if (responseLines.Count > memCycles)
-                    responseLines.Dequeue(); // remove oldest
-
+                
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
-                sFore = SetContentBookRunning(responseLines, getResponseLiness, 1, "", currentInput);
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 1, "", currentInput,
+                    GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
 
                 // Step 2: Send ChatGPT response to Gemini
                 do
@@ -3057,12 +3124,11 @@ class Program
                     await writer.WriteLineAsync(geminiResponse);
                 }
                 responseLines.Enqueue(geminiResponse);
-                if (responseLines.Count > memCycles)
-                    responseLines.Dequeue(); // remove oldest
-
+                
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
 
-                sFore = SetContentBookRunning(responseLines, getResponseLiness, 2, chapterStage, currentInput);
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 2, chapterStage, currentInput,
+                    GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
 
 
                 // Step 2: Send ChatGPT response to Gemini
@@ -3209,12 +3275,11 @@ class Program
                     await writer.WriteLineAsync(grokResponse);
                 }
                 responseLines.Enqueue(grokResponse);
-                if (responseLines.Count > memCycles)
-                    responseLines.Dequeue(); // remove oldest
-
+                
                 getResponseLiness = string.Join('\n', responseLines) + '\n';
 
-                sFore = SetContentBookRunning(responseLines, getResponseLiness, 3, "", currentInput);
+                sFore = SetContentBookRunning(responseLines, getResponseLiness, 3, "", currentInput,
+                    GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
 
                 chaptersDone += 1;
             }
@@ -3237,6 +3302,424 @@ class Program
             // Replace with actual call to AI
             string summary_ = await LargeGPT.CallLargeChatGPT("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
                 " Give only the paragraphs, no leading text or after text or paragraph numbers. Create a summary of 5 paragraphs for this book." +
+                " Give each paragraph a proper title reflecting the content of the paragraph to clearly show the content of the" +
+                " book in the summary." +
+                plainText, "o3-mini");
+            string _translatedSummary = "";
+            if (_AILanguage.Contains("xxx"))
+                _translatedSummary = summary_;
+            else if (_AILanguage.Contains("nl"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+            else if (_AILanguage.Contains("de"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+            else if (_AILanguage.Contains("ru"))
+                _translatedSummary = await Writeyourownbooktest.Translator.TranslateTextToGiven(summary_, _AILanguage);
+            summary_ = _translatedSummary;
+
+            // Format into C#-compatible string variable
+            summary_ = summary_.Replace("Table of Contents", "");
+            string formatted = GlobalMethods.FormatAsCSharpString(summary_);
+            HtmlGenerator.CreateHtmlDocumentSummary(outputFilePathHtmlSummary, htmlPathBookImage);
+
+            // Add text to html
+            HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtmlSummary,
+                             summary_, "Arial", 16, false);
+
+            htmlContent = File.ReadAllText(outputFilePathHtmlSummary);
+            HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdfSummary);
+            Console.WriteLine("Builded the files, uploading to blob.");
+            pdfBytes = File.ReadAllBytes(outputFilePathPdfSummary);
+            result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscriptedsummaries");
+            await GlobalMethods.WriteFileToBlobAsync(summary_, GetPromptVars.NameOfBook + ".txt", "mindscriptedsummaries");
+            Console.WriteLine("Done. Result " + result);
+
+            Console.WriteLine("Done with book AND summary:" + result);
+
+            // Final write after the loop
+            using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+            {
+                await writer.WriteLineAsync("\n--- End of Conversation ---");
+            }
+        }
+        else if (args[0] != null && args[0].Contains("DynamicConversation"))
+        {
+            // "aiconversationDynamic" "dochtml" "nl" "true" "Google"
+
+            await GetPromptVars.LoadPlotDataSinglePromptVars();
+
+            // Create the documents
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            string filename = System.DateTime.Now.ToString("yyyyMMddHHmmssfff");
+            string progressFileTxt = "progresscontroller.txt";
+            string chapterTitlesPathHtml = "talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdf = "talkfilebook_" + filename + ".pdf";
+            string chapterTitlesPathHtmlSummary = "summary_talkfilebook_" + filename + ".html";
+            string chapterTitlesPathPdfSummary = "sumary_talkfilebook_" + filename + ".pdf";
+
+            string outputFileProgressTxt = progressFileTxt;
+            string outputFilePathHtmlSummary = appPath + chapterTitlesPathHtmlSummary;
+            string outputFilePathHtml = appPath + chapterTitlesPathHtml;
+            string outputFilePathPdf = appPath + chapterTitlesPathPdf;
+            string outputFilePathPdfSummary = appPath + chapterTitlesPathPdfSummary;
+
+            // Create the variables
+            Queue<string> responseLines = new Queue<string>();
+            List<string> getChapters = new List<string>();
+            int maxCycles = 10;
+            string getResponseLiness = "";
+            string chatGptResponse = "";
+            string _translatedTitle = "";
+            string outputFilePath = "AI_Conversation_Log.txt";
+            string currentInput = GetPromptVars.DPrompt;
+            string chapterContent = "Give only the chapter content without leading or finishing extra content text.";
+            string tTitle = "";
+
+            // Create the image and quote variables
+            string getQuote, sQuote, imagePath, Simage;
+            string sClean = "";
+            string iimage = "";
+            string makingImage = "";
+            bool success;
+
+            // prompt vars
+            string _examples = args[1];
+            string _AILanguage = args[2];
+            string _AIImages = args[3];
+            string _AIModel = args[4];
+
+            string _translationText = "";
+            if (_AILanguage.Contains("xxx"))
+                _translationText = "English";
+            if (_AILanguage.Contains("nl"))
+                _translationText = "Dutch";
+            if (_AILanguage.Contains("de"))
+                _translationText = "German";
+
+            tTitle = await AddTitle(getChapters, currentInput, tTitle);
+            _translatedTitle = await TranslateTitle(tTitle, _AILanguage);
+            tTitle = _translatedTitle;
+
+            // Get the first image title for the book
+            if (_examples.Contains("dochtml"))
+            {
+                string FirstImageOfBook = tTitle;
+                iimage = FirstImageOfBook;
+            }
+
+            // Do we want images?
+            bool doImage = false;
+            if (_AIImages.Contains("true"))
+                doImage = true;
+
+            string mTitle = await AddTitle(getChapters, "Create a main title from " + tTitle, tTitle);
+            _translatedTitle = await TranslateTitle(mTitle, _AILanguage);
+            mTitle = _translatedTitle;
+
+
+            #region Do starting image to Html
+            // Do Image
+            sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+
+
+            getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+            sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+            imagePath = "";
+            if (_examples.Contains("dochtml"))
+            {
+                string TopImage = GetPromptVars.DTypeOfImage;
+                makingImage = TopImage + " on the title - ";
+            }
+            Simage = "";
+            success = false;
+            while (!success)
+            {
+                try
+                {
+                    iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
+                    {
+                        sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                        Simage = await GetDalleGood(makingImage + sQuote);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                    iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
+                    {
+                        sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                        Simage = await GetDalleGood(makingImage + iimage);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                }
+            }
+            success = false;
+            while (!success)
+            {
+                try
+                {
+                    await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                    iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                    Simage = await GetDalleGood(makingImage + iimage);
+                    if (Simage.Contains("Bad Request"))
+                    {
+                        iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                        Simage = await GetDalleGood(makingImage + iimage);
+                    }
+                    await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                }
+            }
+
+
+            imagePath = appPath + sClean + ".jpg";
+            HtmlGenerator.CreateHtmlDocumentConversation(outputFilePathHtml,
+            tTitle, mTitle, GetPromptVars.DTypeOfBook, imagePath);
+            GetPromptVars.MainHtmlImageTop = imagePath;
+
+            GetPromptVars.NameOfBook = mTitle.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+            GetPromptVars.NameOfBook = GetPromptVars.DTitle;
+
+            #endregion
+
+            await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Starting");
+
+            // For the summary
+            string overallPlotline = "<html><body><br>" +
+                    "<h1>Summary of book</h1><hr>" +
+                    tTitle + "<hr>"; // Initial plotline, will evolve
+            string overallPlotLineSummary = "";
+
+            string sFore = SetContentBook(currentInput, GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
+
+            // Clear the file at the start
+            File.WriteAllText(outputFilePath, string.Empty, Encoding.UTF8);
+
+            // Keep track of chapters
+            int chaptersDone = 0;
+            string aiModel = _AIModel;
+            string _notsameasLastChapter = "";
+
+            maxCycles = Convert.ToInt32(GetPromptVars.DCycles);
+            for (int i = 0; i < maxCycles; i++)
+            {
+                string chapterStage;
+
+                if (i == 0)
+                    chapterStage = "INTRO";
+                else if (i < maxCycles / 3)
+                    chapterStage = "RISING_ACTION";
+                else if (i < (maxCycles * 2) / 3)
+                    chapterStage = "FALLING_ACTION";
+                else if (i == maxCycles - 1)
+                    chapterStage = "CLIMAX_FINAL";
+                else
+                    chapterStage = "RESOLUTION";
+
+                await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Chapters done:" + chaptersDone.ToString() + " of total:" + maxCycles.ToString());
+
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync($"\n--- Cycle {i + 1} ---");
+                }
+
+                #region doChatGPT getRespons
+
+                do
+                {
+                    if (aiModel.Contains("Google"))
+                        chatGptResponse = await LargeGPT.GetGoogleLarge(sFore + chapterContent
+                            + _notsameasLastChapter, _translationText);
+                    if (aiModel.Contains("deepseek"))
+                        chatGptResponse = await LargeGPT.GetDeepSeek(sFore + chapterContent
+                            + _notsameasLastChapter, _translationText);
+                }
+                while (chatGptResponse.Contains("No valid response from the API")
+                        || chatGptResponse.Contains("Exception:")
+                        || chatGptResponse.Contains("Error:")
+                        || !chatGptResponse.EndsWith("."));
+
+                // Save the chapter in the queue and in the overall responselines
+                responseLines.Enqueue(chatGptResponse);
+
+                getResponseLiness = string.Join('\n', responseLines) + '\n';
+
+                Console.WriteLine("ChatGPT says:\n" + chatGptResponse);
+
+                // Update overallPlotline with a summary of key developments
+                string plotUpdate = await LargeGPT.CallLargeChatGPT(
+                    "Summarize the key plot developments in this chapter in 1 plain paragraph: '" + chatGptResponse + "'",
+                    "o3-mini");
+                overallPlotLineSummary += plotUpdate + "\n\n"; // Evolve the plotline dynamically
+
+                tTitle = await AddTitle(getChapters, plotUpdate, tTitle);
+                _translatedTitle = await TranslateTitle(tTitle, _AILanguage);
+                tTitle = _translatedTitle;
+                iimage = _translatedTitle;
+
+                #endregion
+
+                #region Do Image and Quote and add response to Html
+                // Do Image
+                sClean = iimage.Replace(":", "-").Replace(",", "").Replace("?", "").Replace("!", "").Replace("\"", "").Replace(";", "").Trim();
+
+                if (doImage)
+                {
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart quote on " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    imagePath = "";
+                    if (_examples.Contains("dochtml"))
+                    {
+                        string TopImage = GetPromptVars.DTypeOfImage;
+                        makingImage = TopImage + " on the title - ";
+                    }
+                    Simage = "";
+                    success = false;
+                    while (!success)
+                    {
+                        try
+                        {
+                            iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                                Simage = await GetDalleGood(makingImage + sQuote);
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                            success = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An error occurred JPG Creation!!!: {ex.Message}. Retrying...");
+                            iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                sQuote = HtmlGenerator.EnsureJpgExtension(sQuote);
+                                Simage = await GetDalleGood(makingImage + sQuote);
+
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                        }
+                    }
+
+                    success = false;
+                    while (!success)
+                    {
+                        try
+                        {
+                            await GlobalMethods.ReduceImageSize(Simage, appPath + sClean + ".jpg");
+                            success = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"An error occurred JPG IMAGE REDUCTION!!!: {ex.Message}. Retrying...");
+                            iimage = HtmlGenerator.EnsureJpgExtension(iimage);
+                            Simage = await GetDalleGood(makingImage + iimage);
+                            if (Simage.Contains("Bad Request"))
+                            {
+                                iimage = HtmlGenerator.EnsureJpgExtension(sClean);
+                                Simage = await GetDalleGood(makingImage + iimage);
+                            }
+                            await GlobalMethods.GetImageFromURL(Simage, outputFilePath, sClean);
+                        }
+                    }
+                }
+                // Append to HTML
+                if (_examples.Contains("dochtml"))
+                {
+                    HtmlGenerator.AppendToBody(outputFilePathHtml, "<div style='page-break-after: always;'></div>",
+                        "MAIN Quoted text added successfully.", false);
+                    HtmlGenerator.AppendHeaderToHtml(outputFilePathHtml, sClean, "h1", "Tahoma");
+                }
+
+                if (doImage)
+                {
+                    imagePath = appPath + sClean + ".jpg";
+                    HtmlGenerator.AppendImageToHtml(outputFilePathHtml, imagePath, false);
+                }
+                getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote of ONE LINE on: " + sClean);
+                sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                sQuote = await TranslateQuote(getQuote, sQuote, _AILanguage);
+
+                HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, true, true, "white", false, "black", "Garamond", 28, false);
+
+                Console.WriteLine("Before getResponse...");
+                // Generate and store chapter content
+                if (_examples.Contains("dochtml"))
+                {
+                    getQuote = await GetChatGPTSmallToken("Create a catchy smart intelligent thought provoking quote on: " + sClean);
+                    sQuote = GlobalMethods.CleanStringBeforeFirstQuote(getQuote);
+
+                    Console.WriteLine("Before translating sQuote");
+                    sQuote = await TranslateQuote(getQuote, sQuote, _AILanguage);
+                    Console.WriteLine("After translating getQuote");
+
+                    HtmlGenerator.InsertQuotedText(outputFilePathHtml, sQuote, false, true, "white", false, "black", "Garamond", 28, false);
+
+                    HtmlGenerator.AppendTextToHtmlDocument(outputFilePathHtml,
+                            chatGptResponse, "Arial", 16);
+                    Console.WriteLine("After ADDING translated getResponse to the document.");
+                }
+                #endregion
+
+                #region Consolewrite ChatGPT and queue response for next cycle
+
+                using (StreamWriter writer = new StreamWriter(outputFilePath, append: true, Encoding.UTF8))
+                {
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("CHATGPT");
+                    await writer.WriteLineAsync("---------------------------------------------------");
+                    await writer.WriteLineAsync("ChatGPT says:");
+                    await writer.WriteLineAsync(tTitle);
+                    await writer.WriteLineAsync(chatGptResponse);
+                }
+               
+                sFore = await SetContentBookRunningDynamicAsync(responseLines, getResponseLiness, chapterStage, currentInput,
+                    GetPromptVars.DNarrativeStyle, GetPromptVars.DAuthorInspiration);
+
+                _notsameasLastChapter = "Make SURE that this new chapter DOES NOT CONTAIN ANYTHING SIMILAR as the previous chapter:" +
+                   responseLines.Last() + " but ONLY NEW FRESH INSPIRING CONTENT based on the new prompt.";
+
+                #endregion
+
+                chaptersDone += 1;
+            }
+            // Doing the main book pdf
+            string htmlContent = File.ReadAllText(outputFilePathHtml);
+            HtmlToPdfGeneratorDinky.ConvertHtmlToPdf(htmlContent, outputFilePathPdf);
+            byte[] pdfBytes = File.ReadAllBytes(outputFilePathPdf);
+            string result = await GlobalMethods.WritePdfToBlobAsync(pdfBytes, GetPromptVars.NameOfBook + ".pdf", "mindscripted");
+            await GlobalMethods.WriteProgress(outputFilePathPdf, outputFileProgressTxt, "Book finished:" + GetPromptVars.NameOfBook + ".html");
+
+            Console.WriteLine("PDF upload to Blob, now working on the summary:" + result);
+
+            // Going to do the pdf and txt summary
+            htmlContent = File.ReadAllText(outputFilePathHtml);
+            string htmlPathBookImage = GetPromptVars.MainHtmlImageTop;
+            string plainText = Regex.Replace(htmlContent, "<.*?>", string.Empty);
+            //plainText = System.Net.WebUtility.HtmlDecode(plainText);
+            plainText = overallPlotLineSummary;
+
+            // Replace with actual call to AI
+            string summary_ = await LargeGPT.CallLargeChatGPT("Make sure the text is properly formatted with <center><h3></h3></center><p></p>." +
+                " Give only the paragraphs, no leading text or after text or paragraph numbers. Create a summary of 5 paragraphs for this book." +
+                " Give each paragraph a proper title reflecting the content of the paragraph to clearly show the content of the" +
+                " book in the summary." +
                 plainText, "o3-mini");
             string _translatedSummary = "";
             if (_AILanguage.Contains("xxx"))
@@ -5055,46 +5538,74 @@ class Program
     }
 
     private static string SetContentBookRunning(Queue<string> responseLines, string getResponseLiness, int cRun
-        , string _chapterStage, string _currentInput)
+        , string _chapterStage, string _currentInput, string _narrativeStyle, string _authorInspiration)
+
     {
+        string narrativeStyle = _narrativeStyle;
+        string authorInspiration = _authorInspiration;
+
         string sFore = "";
+
+        if (cRun == 0)
+        {
+            sFore =
+                "This is the FIRST CHAPTER of a new story based entirely on the following overarching plot: '" + _currentInput + "'. " +
+                "Craft a compelling, intellectually rich, and emotionally resonant opening that draws the reader into the world. " +
+                "Establish the key mood, philosophical tensions, and societal structure implicit in the plot. " +
+                "Introduce one or more primary characters whose motivations or dilemmas are closely tied to the deeper themes of the book—let them reflect the tension, ideology, or paradox of the larger narrative. " +
+                "Do not summarize the plot—dramatize a key moment or incident that signals the journey ahead while anchoring it in subtle exposition, symbolic cues, and natural dialogue. " +
+                "Let this chapter ignite curiosity by hinting at unseen structures, hidden histories, or unresolved questions. " +
+                "Use vivid sensory detail and emotionally intelligent language to shape character presence, world texture, and thematic atmosphere. " +
+                "Style: " + narrativeStyle + ". Influenced by: " + authorInspiration + ". " +
+                "Above all, make this chapter feel like the inevitable beginning of a larger design—where every line serves as a seed for mystery, momentum, and meaning.";
+        }
         if (cRun == 1)
         {
-            sFore = "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTERS, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                    "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
-                    "Introduce several new characters at meaningful junctures—each adding depth, tension, or contrast to the evolving dynamics. Give them clear voices, moral stances, and distinct roles that naturally integrate into the overarching storyline. " +
-                    "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and new emotional and philosophical stakes. " +
-                    "Let dialogue drive forward both relationships and revelations—use intelligent exchanges, subtle cues, and thematic undertones to uncover hidden motives, challenge assumptions, and spark ideological or personal conflict. " +
-                    "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot: " + _currentInput + "." +
-                    "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
-                    "This chapter should enrich the thematic arc, maintain momentum, and challenge the reader intellectually and emotionally as the story progresses.";
-        }   
+            sFore =
+              "Create a chapter that is a NATURAL, LOGICAL, CONSISTENT CONTINUATION of the PREVIOUS CHAPTER: " + responseLines.Last() + ". " +
+              "Build thoughtfully and imaginatively upon the unfolding events and thematic tensions—advance character arcs through emotionally charged dialogue, psychological nuance, and interactions that surprise or reveal. " +
+              "Introduce several new characters at pivotal or symbolic moments—let them bring disruption, contrast, or resonance to the existing dynamics. Each character should possess a distinctive voice, inner world, and narrative purpose that enhances the stakes. " +
+              "Avoid repetition of prior actions or imagery—introduce novelty through vivid new environments, unexpected dilemmas, or philosophical questions that deepen the core narrative. " +
+              "Use dialogue as a central narrative force—intelligent, ambiguous, layered with tension or irony, and revealing of character motives, ideologies, or concealed truths. " +
+              "Embed the OVERALL STORYLINE so far: " + getResponseLiness + ", making it the spine of coherence while leaving space for subplots, twists, and symbolic evolution tied to: " + _currentInput + ". " +
+              "Incorporate advanced storytelling techniques—nonlinear timelines, reflective symbolism, internal monologue, dream-logic sequences, or mirror-like reversals. " +
+              "Write in a style that is: " + narrativeStyle +
+              " The tone and structure should reflect the influence of: " + authorInspiration +
+              " Ensure this chapter balances philosophical clarity, emotional charge, and calculated unpredictability to keep the narrative immersive and evolving.";
+        }
+
         if (cRun == 2)
         {
             sFore =
-                   $"This is a {_chapterStage} chapter. " +
-                   "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                   "Build intelligently upon the established events and themes—expand character development and motivations through layered, emotionally resonant dialogue and psychologically complex interactions. " +
-                   "Introduce several new characters relevant to this stage of the narrative—each with distinct goals, perspectives, and personalities that challenge, support, or complicate the protagonist’s journey. " +
-                   "Weave these new figures seamlessly into the plot, using their presence to raise new questions, reshape group dynamics, or add philosophical and emotional tension. " +
-                   "Avoid repetition of previous actions or descriptions; instead, evolve the world and characters with fresh situations, immersive scenery, and heightened emotional or ideological stakes. " +
-                   "Let intelligent and dynamic dialogue unveil secrets, spark conflict, or reveal unexpected alliances—every conversation should carry weight, subtext, and narrative function. " +
-                   "Seamlessly incorporate the OVERALL STORYLINE so far: '" + getResponseLiness + "', ensuring coherence while introducing unexpected yet believable twists that elevate the plot: " + _currentInput + "." +
-                   "Utilize advanced narrative techniques such as nonlinear timelines, parallel arcs, hidden symbolism, or memory overlays to deepen the pacing and structure. " +
-                   "This chapter should reflect the function of the current chapter stage, enrich the thematic arc, and propel the story forward with emotional resonance, narrative surprise, and intellectual depth.'";
+              "This is a " + _chapterStage + " chapter. " +
+              "Craft a NATURAL and LOGICALLY CONSISTENT CONTINUATION of the PREVIOUS CHAPTER: " + responseLines.Last() + ". " +
+              "Avoid surface-level escalation—focus on complexity, doubt, and transformation. " +
+              "Build meaningfully on existing events and deepen character motivations through emotionally resonant dialogue and nuanced internal shifts. " +
+              "Introduce one or more NEW CHARACTERS who align with or challenge the current trajectory—give them purpose, presence, and unexpected narrative weight. " +
+              "Integrate these characters seamlessly, using them to reflect, contrast, or complicate emerging themes. " +
+              "Avoid descriptive or narrative redundancy—explore inventive conflicts, environments, and dilemmas that feel fresh yet coherent. " +
+              "Craft dialogue that carries multiple meanings, inner conflicts, and subtext—use irony, reflection, or philosophical play to deepen tension and intrigue. " +
+              "Reflect the OVERALL STORYLINE to date: " + getResponseLiness + ", anchoring this chapter in thematic continuity while introducing new threads tied to: " + _currentInput + ". " +
+              "Experiment with narrative techniques such as temporal layering, symbolic architecture, emotional echoing, or embedded myths. " +
+              "Above all, write in a style defined by: " + narrativeStyle +
+              " Let the tone and architecture be shaped by the influence of: " + authorInspiration;
+             
         }
+
         if (cRun == 3)
         {
             sFore =
-                     "Create a chapter that is a NATURAL CONTINUATION of the PREVIOUS CHAPTER, fully aware of its ENTIRE PLOTLINE as present here: '" + responseLines.Last() + "'. " +
-                     "Build further upon these key events and themes without repeating specific actions, descriptions, or events—avoid duplicating scenes such as standing before a doorway if already depicted. " +
-                     "Introduce new characters who naturally emerge at this stage—give them clear roles, distinct voices, and meaningful interactions that add complexity, challenge assumptions, or expand the emotional and thematic range of the story. " +
-                     "Use rich, psychologically layered dialogue to deepen relationships, ignite tensions, or reveal inner conflicts—ensure each exchange serves a purpose beyond surface-level interaction. " +
-                     "Seamlessly weave in the OVERALL STORYLINE so far: '" + getResponseLiness + "', maintaining a clear and coherent narrative progression towards and around the plot: " + _currentInput + "." +
-                     "Allow for creative storytelling techniques such as flashbacks, time jumps, parallel threads, or shifting perspectives to enrich the structure and pacing. " +
-                     "Ensure this chapter contributes meaningfully to the larger arc, advancing the narrative toward a satisfying and thematically resonant conclusion, while keeping momentum and intrigue alive.";
-
+              "Create a chapter that is a NATURAL and LOGICAL CONSISTANT CONTINUATION of the PREVIOUS CHAPTER: " + responseLines.Last() + ". " +
+              "Craft dialogue that is intricate, emotionally layered, and thematically charged—every line should reveal something new or deepen something unresolved. " +
+              "Weave in the OVERALL STORYLINE so far: " + getResponseLiness + ", ensuring continuity while allowing for narrative surprises, intellectual depth, and mythic undertones tied to: " + _currentInput + ". " +
+              "Use the plot to explore hidden patterns, mythic undercurrents, or symbolic revelations. " +
+              "Only introduce new characters if they embody or challenge core ideas; they must be catalytic, not cosmetic. " +
+              "Dialogue must now echo, contradict, or synthesize ideas raised earlier—each line carrying ideological weight. " +
+              "Employ elevated narrative techniques—recurring motifs, layered timelines, symbolic reversals, introspective sequences, or metaphysical allusions. " +
+              "Write in a style that is: " + narrativeStyle +
+              " Let the tone and narrative structure reflect the influence of: " + authorInspiration;
         }
+
 
         StringBuilder result = new StringBuilder();
 
@@ -5108,36 +5619,131 @@ class Program
             result.AppendLine(); // First blank line
             result.AppendLine(); // Second blank line
         }
+        string finalOutputLastParagraphs = result.ToString().TrimEnd(); // Remove final trailing newlines
 
-        string finalOutput = result.ToString().TrimEnd(); // Remove final trailing newlines
+        result = new StringBuilder();
 
-        sFore = sFore + " Make the ending paragraph of this new chapter fully based on the content of current chapter," +
-            " but different from the previous chapter endings in " +
-                    finalOutput + ", " +
-                    "so that " +
-                    " the style does not seem similar with previous ending paragraphs " +
-                    "of the previous chapters to make the story more alive and vivid." +
-                    "Do an extra check if all the grammar and lines are logically and " +
+        foreach (var text in responseLines)
+        {
+            // Split on double newlines or single newlines
+            var paragraphs = text.Split(new[] { "\n\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Take the first paragraph instead of the last
+            var firstParagraph = paragraphs[0].Trim();
+
+            result.AppendLine(firstParagraph);
+            result.AppendLine(); // First blank line
+            result.AppendLine(); // Second blank line
+        }
+
+
+        string finalOutputFirstPargraphs = result.ToString().TrimEnd(); // Remove final trailing newlines
+
+        sFore += "Make sure that NEW NAMES ARE USED FOR NEW CHARACTERS in the book and are NOT ALREADY USED in " +
+            getResponseLiness;
+        sFore += " Make the ending paragraph of this new chapter fully based on the content of current chapter" +
+            ", and leading to the start of a follow up chapter if it is not a final chapter." +
+            " Make the ending paragraph of current chapter different from the previous chapter endings in " +
+                    finalOutputLastParagraphs + ", " +
+                    " and make the starting pargraph of the current chapter different from the previous chapter starters in" +
+                    finalOutputFirstPargraphs +  ". " +
+                    "Do an extra check if all the grammar, words and lines are logically and " +
                     "correct conform the given output language asked for.";
+
+        sFore += " ABOVE ALL, avoid inconsitencies in the story. Write witty, intelligent, throught provoking and cunning. ";
         
-        sFore = "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+        sFore += "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words.";
         
         return sFore;
     }
+    private static async Task<string> SetContentBookRunningDynamicAsync(Queue<string> responseLines, string getResponseLiness
+        , string _chapterStage, string _currentInput, string _narrativeStyle, string _authorInspiration)
 
-    private static string SetContentBook(string currentInput)
     {
-        string sFore =
-             "Begin the story with an elaborate, immersive introductory chapter inspired by the initial plotline: '" + currentInput + "'. " +
-             "Craft vivid and atmospheric scene descriptions that bring the world to life—use sensory details, symbolic elements, and mood to anchor the reader in time and place. " +
-             "Introduce not only the protagonist but also a diverse cast of supporting characters—each with their own distinctive voice, backstory, worldview, and motivations. " +
-             "Ensure that character interactions are meaningful and complex, using intelligent, layered dialogues to reveal relationships, hidden tensions, unspoken desires, and emerging alliances or rivalries. " +
-             "Let characters challenge, provoke, and surprise one another—use conflict, wit, empathy, and philosophical undertones to make conversations feel real and compelling. " +
-             "Allow the narrative to unfold with a dynamic structure—incorporate memories, visions, or glimpses of possible futures to enrich the temporal texture and build intrigue. " +
-             "Weave in subtle yet intelligent plot developments and foreshadowing—seeding future twists without making them obvious. " +
-             "This chapter should ignite curiosity, evoke emotional investment, and lay the philosophical, emotional, and thematic foundations for the journey ahead without resolving the deeper tensions.";
+        string narrativeStyle = _narrativeStyle;
+        string authorInspiration = _authorInspiration;
 
-        sFore = "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words." + sFore;
+        string sFore = "";
+
+
+        //string dynamicBody = await GetDynamicChapterBodyAsync(responseLines.Last(), _currentInput);
+        //string dynamicBody = await LargeGPT.GetGoogleLargePrompt(responseLines.Last(), getResponseLiness);
+        string dynamicBody = await LargeGPT.CallLargeChatGPTPrompt(responseLines.Last(), "o3-mini");
+
+        sFore =
+            "This is a " + _chapterStage + " chapter. " +
+            "Craft a NATURAL and LOGICALLY CONSISTENT CONTINUATION of the PREVIOUS CHAPTER: " + responseLines.Last() + ". " +
+            dynamicBody + " " +
+            "Reflect the OVERALL STORYLINE to date: " + getResponseLiness + ", anchoring this chapter in thematic continuity while introducing new threads tied to: " + _currentInput + ". " +
+            "Experiment with narrative techniques such as temporal layering, symbolic architecture, emotional echoing, or embedded myths. " +
+            "Above all, write in a style defined by: " + narrativeStyle +
+            " Let the tone and architecture be shaped by the influence of: " + authorInspiration;
+
+        StringBuilder result = new StringBuilder();
+
+        foreach (var text in responseLines)
+        {
+            // Split on double newlines or single newlines
+            var paragraphs = text.Split(new[] { "\n\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var lastParagraph = paragraphs[^1].Trim(); // ^1 means the last element
+
+            result.AppendLine(lastParagraph);
+            result.AppendLine(); // First blank line
+            result.AppendLine(); // Second blank line
+        }
+        string finalOutputLastParagraphs = result.ToString().TrimEnd(); // Remove final trailing newlines
+
+        result = new StringBuilder();
+
+        foreach (var text in responseLines)
+        {
+            // Split on double newlines or single newlines
+            var paragraphs = text.Split(new[] { "\n\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Take the first paragraph instead of the last
+            var firstParagraph = paragraphs[0].Trim();
+
+            result.AppendLine(firstParagraph);
+            result.AppendLine(); // First blank line
+            result.AppendLine(); // Second blank line
+        }
+
+
+        string finalOutputFirstPargraphs = result.ToString().TrimEnd(); // Remove final trailing newlines
+
+        sFore += "Make sure that NEW NAMES ARE USED FOR NEW CHARACTERS in the book and are NOT ALREADY USED in " +
+            getResponseLiness;
+        sFore += " Make the ending paragraph of this new chapter fully based on the content of current chapter" +
+            ", and leading to the start of a follow up chapter if it is not a final chapter." +
+            " Make the ending paragraph of current chapter different from the previous chapter endings in " +
+                    finalOutputLastParagraphs + ", " +
+                    " and make the starting pargraph of the current chapter different from the previous chapter starters in" +
+                    finalOutputFirstPargraphs + ". " +
+                    "Do an extra check if all the grammar, words and lines are logically and " +
+                    "correct conform the given output language asked for.";
+
+        sFore += " ABOVE ALL, avoid inconsitencies in the story. Write witty, intelligent, throught provoking and cunning. ";
+
+        sFore += "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words.";
+
+        return sFore;
+    }
+
+    private static string SetContentBook(string _currentInput, string narrativeStyle, string authorInspiration)
+    {
+        sFore =
+            "This is the FIRST CHAPTER of a new story based entirely on the following overarching plot: '" + _currentInput + "'" +
+            " without naming it as a plot in the first chapter but only basing the content of the first chapter on and round this plot. " +
+            "Craft a compelling, intellectually rich, and emotionally resonant opening that draws the reader into the world. " +
+            "Establish the key mood, philosophical tensions, and societal structure implicit in the plot. " +
+            "Introduce one or more primary characters whose motivations or dilemmas are closely tied to the deeper themes of the book—let them reflect the tension, ideology, or paradox of the larger narrative. " +
+            "Do not summarize the plot—but introduce key moments that signals the journey ahead while anchoring it in subtle exposition, symbolic cues, and natural dialogue. " +
+            "Let this chapter ignite curiosity by hinting at unseen structures, hidden histories, or unresolved questions. " +
+            "Use vivid sensory detail and emotionally intelligent language to shape character presence, world texture, and thematic atmosphere. " +
+            "Style: " + narrativeStyle + ". Influenced by: " + authorInspiration + ". ";
+           
+        sFore += "Write an immersive thriller chapter of " + GetPromptVars.DWords + " words.";
+
         return sFore;
     }
 
@@ -6564,6 +7170,97 @@ Exactly Like this example structure:
         }
         return "After GoOn";
     }
+    private static async Task<string> GetDynamicChapterBodyAsync(string previousChapter, string storySoFar)
+    {
+       
+
+        int maxRetries = 10;
+        int retryCount = 0;
+        TimeSpan delay = TimeSpan.FromSeconds(2);
+        string apiKey = Secrets._o1;
+        string apiUrl = "https://api.openai.com/v1/chat/completions";
+
+        var tones = new[]
+        {
+            "clinical futurism",
+            "psychoanalytical tension",
+            "rationalist noir",
+            "technocratic suspense",
+            "synthetic existentialism"
+        };
+
+        string chosenTone = tones[Random.Shared.Next(tones.Length)];
+
+        string userPrompt = $"Create a prompt for writing the next chapter in the book." +
+             $" Make the style lean toward {chosenTone}" +
+             $" and build the prompt upon the previous chapter content found in " + previousChapter +
+             $" as a natural follow up and continuation of the storyline and plot " +
+             $" found in:" + storySoFar;
+        
+       
+        while (retryCount < maxRetries)
+        {
+            using (HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(500) })
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+
+                var requestBody = new
+                {
+                    model = Secrets._ai_modelPrompt, // e.g., "gpt-4o"
+                    messages = new[]
+                    {
+                    new { role = "system", content =  $"You are a literary AI that crafts brilliant, fresh narrative instructions." },
+                    new { role = "user", content = userPrompt }
+                },
+                    temperature = 0.8,
+                    max_tokens = 300
+                };
+
+                string jsonContent = JsonConvert.SerializeObject(requestBody);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                try
+                {
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+                    response.EnsureSuccessStatusCode(); // Throws if status code not 2xx
+
+                    string responseString = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(responseString);
+
+                    return doc.RootElement
+                              .GetProperty("choices")[0]
+                              .GetProperty("message")
+                              .GetProperty("content")
+                              .GetString()
+                              .Trim();
+                }
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                {
+                    retryCount++;
+                    if (retryCount >= maxRetries)
+                        throw new Exception("Request timed out after multiple retries.", ex);
+
+                    await Task.Delay(delay);
+                    delay *= 2;
+                }
+                catch (HttpRequestException ex)
+                {
+                    retryCount++;
+                    if (retryCount >= maxRetries)
+                        throw new Exception("HTTP request failed after multiple retries.", ex);
+
+                    await Task.Delay(delay);
+                    delay *= 4;
+                }
+            }
+        }
+
+        throw new Exception("Unexpected error: Maximum retries exceeded.");
+    }
+
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// <summary>   A chat gpt request. </summary>
@@ -6928,6 +7625,55 @@ Exactly Like this example structure:
             return "Error: " + ex.Message;
         }
     }
+    private async static Task<string> GetDalleGoodStripped(string textForImage)
+    {
+        string apiKey = Secrets._ChatGPT;
+        string endpoint = "https://api.openai.com/v1/images/generations";
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", apiKey);
+
+        var requestBody = new
+        {
+            model = "dall-e-3",
+            prompt = textForImage,
+            n = 1,
+            size = "1024x1024",
+            response_format = "url"
+        };
+
+        var content = new StringContent(
+            JsonConvert.SerializeObject(requestBody),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        try
+        {
+            var response = await client.PostAsync(endpoint, content);
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                dynamic result = JsonConvert.DeserializeObject(body);
+                string imageUrl = result.data[0].url;
+                Console.WriteLine("Image URL: " + imageUrl);
+                return imageUrl;
+            }
+            else
+            {
+                // log full error payload
+                Console.WriteLine($"Error {response.StatusCode}: {body}");
+                return $"Failed: {body}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Exception: " + ex);
+            return "Error:" + ex.Message;
+        }
+    }
+
     private async static Task<string> GetDalleGood(string textForImage)
     {
         string apiKey = Secrets._ChatGPT;  // Replace with your actual OpenAI API key
@@ -8248,6 +8994,18 @@ Exactly Like this example structure:
             }
             return "xx";
         }
+    private static async Task<string> GetAccessTokenAsync()
+    {
+        string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+        var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+        var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+        var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+        var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+        Console.WriteLine("Access Token retrieved successfully");
+
+        return accessToken;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -8294,6 +9052,272 @@ class Character
     #endregion
 }
 
+public sealed class GoogleImageGenerator : IDisposable
+{
+    // Configuration
+    public string ProjectId { get; set; }
+    public string Location { get; set; } = "us-central1";
+    public string ModelId { get; set; } = "imagen-3.0-generate-002"; // Latest Imagen 3.0
+    public string ServiceAccountJson { get; set; }
+    public string OutputDirectory { get; set; } = "./GeneratedImages";
 
+    private readonly HttpClient _httpClient = new();
+    private bool _disposed;
 
+    public class GenerationOptions
+    {
+        public int Width { get; set; } = 1024;  // Supports up to 2048x2048
+        public int Height { get; set; } = 1024;
+        public string NegativePrompt { get; set; } = "blurry, low quality, distorted";
+        public int Seed { get; set; } = new Random().Next(10000);
+        public int SampleCount { get; set; } = 1;
+        public float GuidanceScale { get; set; } = 7.5f;  // Range: 1-20 (higher = stricter prompt adherence)
+        public string Style { get; set; } = "photographic"; // New in Imagen 3.0
+    }
 
+    public GenerationOptions Options { get; set; } = new();
+
+    public async Task<string> GenerateImage(string prompt)
+    {
+        ValidateInputs();
+
+        try
+        {
+            var accessToken = await GetAccessTokenAsync();
+            var endpoint = GetApiEndpoint();
+            var request = CreateRequest(prompt);
+
+            var response = await SendRequest(accessToken, endpoint, request);
+            return ProcessResponse(response);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Image generation failed", ex);
+        }
+    }
+
+    private void ValidateInputs()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectId))
+            throw new InvalidOperationException("ProjectId must be set");
+        if (Options.Width > 2048 || Options.Height > 2048)
+            throw new ArgumentException("Maximum resolution is 2048x2048");
+    }
+
+    private async Task<string> GetAccessTokenAsync()
+    {
+        string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+        var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+        var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+        var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+        var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+        Console.WriteLine("Access Token retrieved successfully");
+
+        return accessToken;
+    }
+
+    private string GetApiEndpoint() =>
+        $"https://{Location}-aiplatform.googleapis.com/v1/projects/{ProjectId}/locations/{Location}/publishers/google/models/{ModelId}:predict";
+
+    private object CreateRequest(string prompt) => new
+    {
+        instances = new[]
+        {
+            new
+            {
+                prompt = prompt,
+                negativePrompt = Options.NegativePrompt,
+                imageSize = $"{Options.Width}x{Options.Height}",
+                seed = Options.Seed,
+                style = Options.Style  // New in Imagen 3.0
+            }
+        },
+        parameters = new
+        {
+            sampleCount = Options.SampleCount,
+            guidanceScale = Options.GuidanceScale
+        }
+    };
+
+    private async Task<string> SendRequest(string accessToken, string endpoint, object request)
+    {
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await _httpClient.PostAsync(
+            endpoint,
+            new StringContent(
+                System.Text.Json.JsonSerializer.Serialize(request),
+                Encoding.UTF8,
+                "application/json"));
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            throw new Exception($"API Error: {response.StatusCode}\n{errorContent}");
+        }
+
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    private string ProcessResponse(string jsonResponse)
+    {
+        using var doc = JsonDocument.Parse(jsonResponse);
+        var imageData = doc.RootElement
+            .GetProperty("predictions")[0]
+            .GetProperty("bytesBase64Encoded")
+            .GetString();
+
+        Directory.CreateDirectory(OutputDirectory);
+        string filePath = Path.Combine(OutputDirectory, $"imagen3_{DateTime.Now:yyyyMMddHHmmss}.png");
+        File.WriteAllBytes(filePath, Convert.FromBase64String(imageData));
+
+        return Path.GetFullPath(filePath);
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _httpClient?.Dispose();
+            _disposed = true;
+        }
+    }
+}
+
+public sealed class GoogleImageGeneratorOld : IDisposable
+{
+    // Configuration
+    public string ProjectId { get; set; }
+    public string Location { get; set; } = "us-central1";
+    public string ModelId { get; set; } = "imagen-3.0-generate-002"; // Latest model
+    public string ServiceAccountJson { get; set; }
+    public string OutputDirectory { get; set; } = "./GeneratedImages";
+
+    private readonly HttpClient _httpClient = new();
+    private bool _disposed;
+
+    public class ImageGenerationOptions
+    {
+        public int Width { get; set; } = 1024;  // Default for Imagen 2
+        public int Height { get; set; } = 1024;
+        public string NegativePrompt { get; set; } = "blurry, low quality, distorted";
+        public int Seed { get; set; } = new Random().Next(10000);
+        public int SampleCount { get; set; } = 1;
+        public float GuidanceScale { get; set; } = 7.5f; // New in Imagen 2 (3-20 range)
+    }
+
+    public ImageGenerationOptions GenerationOptions { get; set; } = new();
+
+    public async Task<string> GenerateImage(string prompt)
+    {
+        // Validate inputs
+        if (string.IsNullOrWhiteSpace(ProjectId))
+            throw new InvalidOperationException("ProjectId must be set");
+
+        if (string.IsNullOrWhiteSpace(prompt))
+            throw new ArgumentException("Prompt cannot be empty");
+
+        try
+        {
+            // 1. Authenticate
+            var accessToken = await GetAccessTokenAsync();
+
+            // 2. Prepare API request
+            var endpoint = $"https://{Location}-aiplatform.googleapis.com/v1/projects/{ProjectId}/locations/{Location}/publishers/google/models/{ModelId}:predict";
+
+            var request = new
+            {
+                instances = new[]
+                {
+                    new
+                    {
+                        prompt = prompt,
+                        negativePrompt = GenerationOptions.NegativePrompt,
+                        width = GenerationOptions.Width,
+                        height = GenerationOptions.Height,
+                        seed = GenerationOptions.Seed
+                    }
+                },
+                parameters = new
+                {
+                    sampleImageSize = $"{GenerationOptions.Width}x{GenerationOptions.Height}",
+                    sampleCount = GenerationOptions.SampleCount,
+                    guidanceScale = GenerationOptions.GuidanceScale // New in Imagen 2
+                }
+            };
+
+            // 3. Send request
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _httpClient.PostAsync(
+                endpoint,
+                new StringContent(
+                    System.Text.Json.JsonSerializer.Serialize(request),
+                    Encoding.UTF8,
+                    "application/json"));
+
+            // 4. Process response
+            var responseContent = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"API Error: {response.StatusCode}\n{responseContent}");
+
+            return ProcessResponse(responseContent);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Image generation failed", ex);
+        }
+    }
+
+    private string ProcessResponse(string jsonResponse)
+    {
+        using var doc = JsonDocument.Parse(jsonResponse);
+        var root = doc.RootElement;
+
+        // Handle Imagen 2 response format
+        var prediction = root.GetProperty("predictions")[0];
+        var imageData = prediction.GetProperty("bytesBase64Encoded").GetString();
+
+        // Save to file
+        Directory.CreateDirectory(OutputDirectory);
+        string filePath = Path.Combine(
+            OutputDirectory,
+            $"image_{DateTime.Now:yyyyMMddHHmmss}.png");
+
+        File.WriteAllBytes(
+            filePath,
+            Convert.FromBase64String(imageData));
+
+        return Path.GetFullPath(filePath);
+    }
+
+    private async Task<string> GetAccessTokenAsync()
+    {
+        //GoogleCredential credential = !string.IsNullOrWhiteSpace(ServiceAccountJson)
+        //    ? GoogleCredential.FromJson(ServiceAccountJson)
+        //        .CreateScoped("https://www.googleapis.com/auth/cloud-platform")
+        //    : await GoogleCredential.GetApplicationDefaultAsync();
+
+        string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+        var credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+        var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+        var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+        var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+        Console.WriteLine("Access Token retrieved successfully");
+
+        return accessToken;
+    }
+
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _httpClient?.Dispose();
+            _disposed = true;
+        }
+    }
+}

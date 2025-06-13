@@ -4019,14 +4019,66 @@ namespace Writeyourownbooktest
             Console.WriteLine(response);
             return response;
         }
+        public static async Task<string> CallLargeChatGPTPrompt(string previousChapter, string modell, string answerLanguage = "English")
+        {
+            var tones = new[]
+                    {
+                "clinical futurism",
+                "psychoanalytical tension",
+                "rationalist noir",
+                "technocratic suspense",
+                "synthetic existentialism"
+            };
 
-        static async Task<string> CallOpenAIAsync(string prompt, string modell, string answerLanguage)
+            string chosenTone = tones[Random.Shared.Next(tones.Length)];
+
+            string userPrompt = $"Create a prompt of one paragraph for writing the next chapter in the book." +
+                $" Do not mention how many paragraphs the next chapter should be, just create an intelligent part of a larger prompt" +
+                $" as described here:";
+
+            userPrompt += " The prompt is part of this prompt where it is the variable dynamicPrompt." +
+               " Make sure it fits well as a part in this larger prompt:" +
+                "This is a _chapterStage chapter. " +
+               "Craft a NATURAL and LOGICALLY CONSISTENT CONTINUATION of the PREVIOUS CHAPTER: responseLines.Last . " +
+               "dynamicBody" +
+               "Reflect the OVERALL STORYLINE to date: getResponseLiness anchoring this chapter in thematic " +
+               "continuity while introducing new threads tied to: _currentInput ." +
+               " Experiment with narrative techniques such as temporal layering, symbolic architecture, emotional echoing, or embedded myths. " +
+               " Above all, write in a style defined by: narrativeStyle " +
+               " Let the tone and architecture be shaped by the influence of: authorInspiration ";
+
+
+            userPrompt += $" Make the style lean toward {chosenTone}" +
+              $" and build the prompt upon the previous chapter content found in " + previousChapter;
+
+            var response = await CallOpenAIAsync(userPrompt, modell, answerLanguage, true);
+            Console.WriteLine(response);
+            return response;
+        }
+
+
+        static async Task<string> CallOpenAIAsync(string prompt, string modell, string answerLanguage, bool promptBool = false)
         {
             int maxRetries = 10;
             int retryCount = 0;
             TimeSpan delay = TimeSpan.FromSeconds(2); // Initial delay
 
-            string question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+            string question = "";
+            string _content = "";
+            int _output = 0;
+
+            if (promptBool)
+            {
+                question = $"Return only the text of the prompt, no front words or paragraphs and no after words or paragraphs. Make a prompt for a new chapter to be written of 3 paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+                _content = "You are a literary AI that crafts brilliant, fresh narrative instructions.";
+                _output = 3000;
+            }
+            else
+            {
+                question = $"Return only the text of the chapter, no front words or paragraphs and no after words or paragraphs. Please answer the following in {answerLanguage}: {prompt}";
+                _content = "You are a helpful assistant.";
+                _output = 100000;
+            }
             prompt = question;
 
             while (retryCount < maxRetries)
@@ -4040,10 +4092,10 @@ namespace Writeyourownbooktest
                         model = modell, // Change to "o1" if needed
                         messages = new[]
                         {
-                    new { role = "system", content = "You are a helpful assistant." },
+                    new { role = "system", content = _content },
                     new { role = "user", content = prompt }
                 },
-                        max_completion_tokens = 100000
+                        max_completion_tokens = _output
                     };
 
                     string jsonContent = JsonConvert.SerializeObject(requestBody);
@@ -4056,12 +4108,16 @@ namespace Writeyourownbooktest
 
                         string responseString = await response.Content.ReadAsStringAsync();
                         using JsonDocument doc = JsonDocument.Parse(responseString);
-
-                        return doc.RootElement
+                        var xx = doc.RootElement
                             .GetProperty("choices")[0]
                             .GetProperty("message")
                             .GetProperty("content")
                             .GetString();
+                        return doc.RootElement
+                            .GetProperty("choices")[0]
+                            .GetProperty("message")
+                            .GetProperty("content")
+                            .GetString(); ;
                     }
                     catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                     {
@@ -4176,7 +4232,8 @@ namespace Writeyourownbooktest
 
                 string prompt = textToTranslate ?? "Tell me about stars.";
                 string question = $"Return only the text content of the chapter, no front words or paragraphs and no after words or paragraphs" +
-                    $" and make sure the chapter ends properly with a completed sentence and a dot, no unfinished end with a comma. Please answer the following in {answerLanguage}: {prompt}";
+                    $" and make sure the chapter ends properly with a completed sentence and a dot, no unfinished end with a comma. Please answer the following in {answerLanguage}: {prompt}" +
+                    $" and do an extra check that the answer IS FULLY GIVEN IN THE LANGUAGE ASKED FOR: {answerLanguage} WITHOUT ANY OTHER LANGUAGES.";
                
                 var requestData = new
                 {
@@ -4253,6 +4310,123 @@ namespace Writeyourownbooktest
                 return $"Error: {ex.Message}";
             }
         }
+        public static async Task<string> GetGoogleLargePrompt(string previousChapter, string storySoFar, string answerLanguage = "English")
+        {
+            string directoryPath = AppDomain.CurrentDomain.BaseDirectory;
+
+            try
+            {
+                string projectId = Secrets.GoogleProjectID;
+                string location = "us-central1";
+                string publisher = "google";
+                string modelId = "gemini-2.5-pro-preview-05-06";
+                string apiEndpoint = $"https://{location}-aiplatform.googleapis.com/v1/projects/{projectId}/locations/{location}/publishers/{publisher}/models/{modelId}:generateContent";
+                string credentialsFilePath = directoryPath + Secrets.GoogleCredentialFile;
+
+                Console.WriteLine($"API Endpoint: {apiEndpoint}");
+                Console.WriteLine($"Credentials Path: {credentialsFilePath}");
+
+                var credential = Google.Apis.Auth.OAuth2.GoogleCredential.FromFile(credentialsFilePath);
+                var scopedCredential = credential.CreateScoped(new[] { "https://www.googleapis.com/auth/cloud-platform" });
+                var accessToken = await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+                Console.WriteLine("Access Token retrieved successfully");
+
+                var tones = new[]
+                {
+                    "clinical futurism",
+                    "psychoanalytical tension",
+                    "rationalist noir",
+                    "technocratic suspense",
+                    "synthetic existentialism"
+                };
+
+                string chosenTone = tones[Random.Shared.Next(tones.Length)];
+
+                string promptText =
+                    $"Create a prompt for writing the next chapter in the book.\n\n" +
+                    $"Make the style lean toward: {chosenTone}.\n\n" +
+                    $"Build the prompt with in mind the previous chapter content to make this prompt build a chapter as a natural follow-up.\n\n" +
+                    $"Previous chapter:\n{previousChapter}\n\n" +
+                    $"Storyline so far:\n{storySoFar}\n\n" +
+                    $"The output should be a rich, compelling prompt in {answerLanguage} that advances the story without repeating earlier scenes. " +
+                    $"Return only the prompt body, no front matter, no closing words.";
+
+                var requestData = new
+                {
+                    contents = new[]
+                    {
+                new
+                {
+                    role = "user",
+                    parts = new[]
+                    {
+                        new { text = promptText }
+                    }
+                }
+            },
+                    generationConfig = new
+                    {
+                        temperature = 0.4,
+                        maxOutputTokens = 2000,
+                        topP = 0.95,
+                        topK = 40
+                    }
+                };
+
+                string jsonContent = JsonConvert.SerializeObject(requestData);
+
+                var retryPolicy = Policy
+                    .HandleResult<HttpResponseMessage>(r => (int)r.StatusCode == 429)
+                    .Or<HttpRequestException>()
+                    .WaitAndRetryAsync(
+                        retryCount: 5,
+                        sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt) + 1),
+                        onRetry: (result, timespan, retryCount, context) =>
+                        {
+                            if (result.Exception != null)
+                                Console.WriteLine($"Retry {retryCount} after {timespan.TotalSeconds}s due to exception: {result.Exception.Message}");
+                            else
+                                Console.WriteLine($"Retry {retryCount} after {timespan.TotalSeconds}s due to status code: {result.Result.StatusCode}");
+                        }
+                    );
+
+                using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    var response = await GoogleAiRequestThrottler.ExecuteWithThrottlingAsync<HttpResponseMessage>(
+                        () => retryPolicy.ExecuteAsync(() => client.PostAsync(apiEndpoint, content))
+                    );
+
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"HTTP Status Code after retries: {response.StatusCode}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception($"API request failed with status {response.StatusCode}: {result}");
+                    }
+
+                    var responseData = JsonConvert.DeserializeObject<ResponseData>(result);
+                    if (responseData?.Candidates?.Length > 0 && responseData.Candidates[0].Content?.Parts?.Length > 0)
+                    {
+                        string answer = responseData.Candidates[0].Content.Parts[0].Text;
+                        Console.WriteLine($"Extracted Prompt: {answer}");
+                        return answer;
+                    }
+                    else
+                    {
+                        throw new Exception("No valid response from the API: " + result);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+                return $"Error: {ex.Message}";
+            }
+        }
+
         public static async Task<string> GetDeepSeekOld(string textToTranslate, string answerLanguage = "English")
         {
             string apiKey = Secrets._deepseekKey;
@@ -5396,6 +5570,8 @@ namespace Writeyourownbooktest
         public static string DWords { get; private set; } = ""; 
         public static string DTypeOfImage { get; private set; } = "";
         public static string DTypeOfBook { get; private set; } = "";
+        public static string DNarrativeStyle { get; private set; } = "";
+        public static string DAuthorInspiration { get; private set; } = "";
 
         private static bool _singletDataLoaded = false;
         public static async Task LoadPlotDataSinglePromptVars(string fileName = "DSingleprompt.txt")
@@ -5414,8 +5590,10 @@ namespace Writeyourownbooktest
                 if (lines.Length > 1) DTitle = lines[1].Trim();
                 if (lines.Length > 2) DCycles = lines[2].Trim();
                 if (lines.Length > 3) DWords = lines[3].Trim();
-                if (lines.Length > 3) DTypeOfImage = lines[4].Trim();
-                if (lines.Length > 3) DTypeOfBook = lines[5].Trim();
+                if (lines.Length > 4) DTypeOfImage = lines[4].Trim();
+                if (lines.Length > 5) DTypeOfBook = lines[5].Trim();
+                if (lines.Length > 6) DNarrativeStyle = lines[6].Trim();
+                if (lines.Length > 7) DAuthorInspiration = lines[7].Trim();
 
                 _singletDataLoaded = true;
             }
